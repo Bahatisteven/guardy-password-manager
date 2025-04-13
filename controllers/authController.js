@@ -1,9 +1,9 @@
 import { createUser, findUserByEmail } from "../models/User.js";
 import { generateToken } from "../utils/jwt.js";
 import argon2 from "argon2";
-import jwt from "jsonwebtoken";
 import { validateSignUp } from "../validators/authValidator.js";
 import { logger } from "../utils/logger.js";
+import { cookieOptions } from "../utils/jwt.js";
 
 
 const signUp = async (req, res) => {
@@ -23,12 +23,11 @@ const signUp = async (req, res) => {
     const user = await createUser(username, email, passwordHash);
 
     const token = generateToken({ id: user.id, email: user.email });
-    res.cookie("token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "development" ? false : true,
-      maxAge: 3600000, 
-    });
-    res.status(201).json({ user });
+    res.cookie("token", token, cookieOptions);
+
+    const { password_hash, ...safeUser } = user;
+    logger.info(`User ${email} signed up successfully.`);
+    res.status(201).json({ user: safeUser });
   } catch (error) {
     logger.error("Error during signup:", error);
     res.status(500).json({message: "An error occurred during signup."})
@@ -47,12 +46,11 @@ const login = async (req, res) => {
       return res.status(401).json({ message: "Invalid credentials." });
     }
     const token = generateToken({ id: user.id, email: user.email });
-    res.cookie("token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "development" ? false : true,
-      maxAge: 3600000,
-    });
-    res.status(200).json({ user });
+    res.cookie("token", token, cookieOptions);
+
+    const { password_hash, ...safeUser } = user;
+    logger.info(`User ${email} logged in successfully.`);
+    res.status(200).json({ user: safeUser });
   } catch(error) {
     logger.error("Error during login:", error);
     res.status(500).json({ message: "An error occurred during login." });
