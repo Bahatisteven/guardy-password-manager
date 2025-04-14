@@ -1,12 +1,14 @@
 import { createVaultItem } from "../models/VaultItem.js";
 import { validateVaultSchema } from "../validators/vaultValidator.js";
 import { logger } from "../utils/logger.js";
+import { DB_ERRORS } from "../utils/dbErrors.js";
+
 const addVaultItem = async (req, res) => {
   try {
     const userId = req.user_id;
     if (!userId) {
       logger.error("User ID is missing in the request.");
-      return res.status(400).json({ message: "User ID is missing." });
+      return res.status(400).json({ message: "User ID is missing. Please log in and try again." });
     }
 
     const { name, type, data } = req.body;
@@ -26,9 +28,13 @@ const addVaultItem = async (req, res) => {
     }
     res.status(201).json({ vaultItem });
   } catch (error) {
-    if (error.code === "23505") {
+    if (error.code === DB_ERRORS.UNIQUE_VIOLATION) {
       logger.error("Vault item already exists:", error.detail);
       return res.status(409).json({ message: "Vault item already exists." });
+    }
+    if (error.code === DB_ERRORS.FOREIGN_KEY_VIOLATION) {
+      logger.error("Foreign key violation:", error.detail);
+      return res.status(400).json({ message: "Invalid user ID." });
     }
     logger.error("Error creating vault item:", error);
     res.status(500).json({ message: "An error occurred while creating the vault item." });

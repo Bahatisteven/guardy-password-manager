@@ -1,16 +1,30 @@
 import Joi from "joi";
-import jwt from "jsonwebtoken";
 
 const signUpSchema = Joi.object({
-  username: Joi.string().min(3).max(30).required(),
-  email: Joi.string().email().required(),
-  password: Joi.string().min(8).required,
+  username: Joi.string().min(3).max(30).required().messages({
+    "string.empty": "Username is required",
+    "string.base": "Username must be a string",
+    "string.pattern.name": "Username must contain only alphanumeric characters",
+    "string.min": "Username must be at least 3 characters long",
+    "string.max": "Username must be at most 30 characters long",
+  }),
+  email: Joi.string().email().required().messages({
+    "string.empty": "Email is required",
+    "string.email": "Email must be a valid email address",
+  }),
+  password: Joi.string().min(8).pattern(new RegExp(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/)).required().messages({
+    "string.empty": "Password is required",
+    "string.min": "Password must be at least 8 characters long",
+  }),
 });
 
 export const validateSignUp = (data) => {
-  return signUpSchema.validate(data);
+  const { error } = signUpSchema.validate(data, { abortEarly: false });
+  if (error) {
+    return { error: error.details.map((detail) => detail.message) }; // return all error msg as an array
+  }
+  next();
 };
-
 
 
 const loginSchema = Joi.object({
@@ -18,27 +32,11 @@ const loginSchema = Joi.object({
   password: Joi.string().min(8).required(),
 });
 
-const { error } = loginSchema.validate(req.body);
-if (error) {
-  return res.status(400).json({ message: error.details[0].message });
-}
 
-
-
-
-
-
-const authenticateToken = (req, res, next) => {
-  const token = req.headers["authorization"]?.split("")[1];
-  if (!token) return res.status(401).json({ message: "Access token is missing or invalid." });
-
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded;
-    next();
-  } catch (error) {
-    return res.status(403).json({ message: "Invalid token or expired token." });
+export const validateLogin = (req, res, next) => {
+  const { error } = loginSchema.validate(req.body);
+  if (error) {
+    return res.status(400).json({ message: error.details[0].message });
   }
+  next();
 };
-
-export { authenticateToken };
