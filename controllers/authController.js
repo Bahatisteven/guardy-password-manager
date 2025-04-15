@@ -8,7 +8,7 @@ import { generateRefreshToken } from "../utils/jwt.js";
 import { refreshTokenCookieOptions } from "../utils/jwt.js";
 
 
-// SignUp function to create a new user and generate tokens
+// signUp function to create a new user and generate tokens
 
 const signUp = async (req, res) => {
   try {
@@ -42,7 +42,7 @@ const signUp = async (req, res) => {
 };
 
 
-// Login function to authenticate the user and generate tokens
+// login function to authenticate the user and generate tokens
 
 const login = async (req, res) => {
   try {
@@ -65,7 +65,7 @@ const login = async (req, res) => {
 };
 
 
-// Logout function to clear cookies and invalidate the session
+// logout function to clear cookies and invalidate the session
 
 const logout = async (req, res) => {
   try {
@@ -81,7 +81,7 @@ const logout = async (req, res) => {
 
 
 
-// Middleware to refresh the access token using the refresh token
+// middleware to refresh the access token using the refresh token
 
 const refreshToken = async (req, res) => {
   try {
