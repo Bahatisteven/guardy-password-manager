@@ -17,11 +17,11 @@ const createVaultItem = async (userId, name, type, data) => {
 };
 
 
-const getVaultItemsByUserId = async (userId) => {
+const getVaultItemsByUserId = async (userId, limits, offset) => {
   try {
     const result = await pool.query(
-      "SELECT * FROM vault_items WHERE user_id = $1",
-      [userId]
+      "SELECT * FROM vault_items WHERE user_id = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3",
+      [userId, limits, offset]
     );
     return result.rows;
   } catch (error) {
