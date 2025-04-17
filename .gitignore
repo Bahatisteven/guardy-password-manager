@@ -6,4 +6,3 @@ node_modules
 build
 # ignore log files
 *.log
-# ignore coverage files 

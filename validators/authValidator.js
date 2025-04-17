@@ -15,6 +15,7 @@ const signUpSchema = Joi.object({
   password: Joi.string().min(8).pattern(new RegExp(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/)).required().messages({
     "string.empty": "Password is required",
     "string.min": "Password must be at least 8 characters long",
+    "string.pattern.name": "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character",
   }),
 });
 

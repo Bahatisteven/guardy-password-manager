@@ -1,5 +1,4 @@
 import jwt from "jsonwebtoken";
-import argon2 from "argon2";
 import { findUserByEmail } from "../models/User";
 import { validateLogin } from "../validators/authValidator";
 import logger from "../utils/logger";
