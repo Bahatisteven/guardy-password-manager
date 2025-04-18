@@ -1,9 +1,8 @@
+import dotenv from "dotenv";
+dotenv.config();
+
 import pg from "pg";
 const { Pool } = pg;
-
-import dotenv from "dotenv";
-
-dotenv.config();
 
 
 const dbPool = new Pool({
@@ -14,7 +13,7 @@ const dbPool = new Pool({
   port: process.env.DB_PORT,
 });
 
-export default dbPool;
+export { dbPool };
 
 dbPool.query("SELECT NOW()", (err, res) => {
   if (err) {

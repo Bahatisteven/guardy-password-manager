@@ -1,8 +1,8 @@
 import jwt from "jsonwebtoken";
-import { findUserByEmail } from "../models/User";
-import { validateLogin } from "../validators/authValidator";
-import logger from "../utils/logger";
-import { sendEmail } from "../utils/sendEmail";
+import { findUserByEmail } from "../models/User.js";
+import { validateLogin } from "../validators/authValidator.js";
+import logger from "../utils/logger.js";
+import { sendEmail } from "../utils/sendEmail.js";
 
 
 // middleware to authenticate JWT token

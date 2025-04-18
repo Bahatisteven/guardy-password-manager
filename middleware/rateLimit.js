@@ -6,4 +6,4 @@ const rateLimiter = rateLimit({
   message: "Too many requests. Please try again later.",
 });
 
-export { rateLimiter };
+export default rateLimiter;

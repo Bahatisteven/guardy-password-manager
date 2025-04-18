@@ -1,4 +1,4 @@
-import { pool } from "../config/db.js";
+import { dbPool as Pool } from "../config/db.js";
 import argon2 from "argon2";
 
 
@@ -13,7 +13,7 @@ const createUser = async ( username, email, password) => {
 
     const passwordHash = await argon2.hash(password);
 
-    const result = await pool.query(
+    const result = await Pool.query(
       "INSERT INTO users ( username, email, password_hash ) VALUES ( $1, $2, $3 ) RETURNING *",
       [username, email, passwordHash]
     );
@@ -28,7 +28,7 @@ const createUser = async ( username, email, password) => {
 
 const findUserByEmail = async (email) => {
   try {
-    const result = await pool.query(
+    const result = await Pool.query(
       "SELECT * FROM users WHERE email = $1",
       [email]
     );

@@ -1,8 +1,8 @@
 import express from "express";
+import rateLimiter from "../middleware/rateLimit.js";
 import { addVaultItem } from "../controllers/vaultController.js";
 import { getVaultItemsByUserId } from "../models/VaultItem.js";
 import { authenticateToken } from "../middleware/authMiddleware.js";
-import { rateLimiter } from "../middleware/rateLimit.js";
 import { validateVaultItem } from "../validators/vaultValidator.js";
 import { validateVaultItemId } from "../validators/vaultValidator.js";
 import { getAllVaultItems } from "../controllers/vaultController.js";
@@ -20,3 +20,7 @@ router.use((req, res) => {
 router.post("/vault/items", rateLimiter, authenticateToken, validateVaultItem, addVaultItem);
 router.get("/vault/items", authenticateToken, getAllVaultItems);
 router.get("/vault/items/:id",authenticateToken, validateVaultItemId, getVaultItemsByUserId);
+
+
+
+export default router;

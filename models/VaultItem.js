@@ -1,4 +1,4 @@
-import { pool } from "../config/db.js";
+import { dbPool as pool } from "../config/db.js";
 import argon2 from "argon2";
 
 const createVaultItem = async (userId, name, type, data) => {

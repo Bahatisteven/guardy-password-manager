@@ -1,11 +1,11 @@
 import nodemailer from 'nodemailer';
-import logger from './logger.js';
+import logger  from './logger.js';
 import dotenv from 'dotenv';
 dotenv.config();
 
 
 
- export const sendEmail = async ({ to, subject, text, html }) => {
+const sendEmail = async ({ to, subject, text, html }) => {
   try {
     const transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST,

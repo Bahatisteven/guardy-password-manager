@@ -1,6 +1,6 @@
 import { createVaultItem } from "../models/VaultItem.js";
 import { validateVaultItem } from "../validators/vaultValidator.js";
-import { logger } from "../utils/logger.js";
+import logger  from "../utils/logger.js";
 import { DB_ERRORS } from "../utils/dbErrors.js";
 
 const addVaultItem = async (req, res) => {

@@ -1,10 +1,10 @@
 import express from "express";
-import { authRoutes } from "./authRoutes";
-import { vaultRoutes } from "./vaultRoutes";
+import { authRoutes } from "./authRoutes.js";
+import vaultRoutes  from "./vaultRoutes.js";
 
 const router = express.Router();
 
 router.use("/auth", authRoutes());
 router.use("/vault", vaultRoutes());
 
-export { router };
+export default router;

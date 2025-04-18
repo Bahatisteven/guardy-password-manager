@@ -2,7 +2,7 @@ import { createUser, findUserByEmail } from "../models/User.js";
 import { generateToken } from "../utils/jwt.js";
 import argon2 from "argon2";
 import { validateSignUp } from "../validators/authValidator.js";
-import { logger } from "../utils/logger.js";
+import logger from "../utils/logger.js";
 import { accessCookieOptions } from "../utils/jwt.js";
 import { generateRefreshToken } from "../utils/jwt.js";
 import { refreshTokenCookieOptions } from "../utils/jwt.js";
