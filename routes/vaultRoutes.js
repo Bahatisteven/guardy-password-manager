@@ -10,16 +10,15 @@ import { getAllVaultItems } from "../controllers/vaultController.js";
 
 const router = express.Router();
 
-
 // router to handle vault item routes
 
-  router.post("/vault/items", rateLimiter, authenticateToken, validateVaultItem, addVaultItem);
-  router.get("/vault/items", authenticateToken, getAllVaultItems);
-  router.get("/vault/items/:id",authenticateToken, validateVaultItemId, getVaultItemsByUserId);
+router.post("/vault/items", rateLimiter, authenticateToken, validateVaultItem, addVaultItem);
+router.get("/vault/items", authenticateToken, getAllVaultItems);
+router.get("/vault/items/:id",authenticateToken, validateVaultItemId, getVaultItemsByUserId);
 
-  router.use((req, res) => {
-    res.status(404).json({ message: "Route not found" });
-  });
+router.use((req, res) => {
+  res.status(404).json({ message: "Route not found" });
+});
 
 
 export default router;
