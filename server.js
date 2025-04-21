@@ -26,7 +26,7 @@ app.use(morgan("combined"));
 app.use(compression());
 
 console.log("Router from index.js",router );
-app.use("/api", rateLimit());
+app.use("/api", rateLimit);
 app.get("/api/health", (req, res) => {
   res.status(200).json({ message: "Server is healthy" });
 });

@@ -6,6 +6,7 @@ import { authenticateLogin } from '../middleware/authMiddleware.js';
 const router = express.Router();
 
 // router to handle auth routes
+
 router.post("/signup", validateSignUp, signUp);
 router.post("/login", validateLogin, authenticateLogin, login);
 router.post("/logout", logout);
