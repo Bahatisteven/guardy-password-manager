@@ -7,7 +7,13 @@ const router = express.Router();
 
 // router to handle auth routes
 
-router.post("/signup", validateSignUp, signUp);
+router.post("/signup", (req, res, next) => {
+  console.log("validation middleware hit");
+  next();
+}, validateSignUp, (req, res, next) => {
+  console.log("signup handler hit");
+  next();
+}, signUp);
 router.post("/login", validateLogin, authenticateLogin, login);
 router.post("/logout", logout);
 

@@ -12,16 +12,25 @@ const router = express.Router();
 
 // router to handle vault item routes
 
-router.post("/vault/items",(req, res, next) => {
+router.post("/items",(req, res, next) => {
   console.log("Rate limiter middleware called");
   next();
 }, rateLimiter,(req, res, next) => {
-  console.log("Rate limiter middleware called");
+  console.log("Authentication middleware hit");
   next();
-}, authenticateToken,(req, res, next) => {console.log("Rate limiter middleware called");next();}, validateVaultItem,(req, res, next) => {console.log("Rate limiter middleware called");next();}, addVaultItem,(req, res, next)=>{console.log("Rate limiter middleware called");next();});
-router.get("/vault/items", authenticateToken, getAllVaultItems);
-router.get("/vault/items/:id",authenticateToken, validateVaultItemId, getVaultItemsByUserId);
-router.post("/vault/items", (req, res) => {
+}, authenticateToken,(req, res, next) => {
+  console.log("Validation middleware hit");
+  next();
+}, validateVaultItem,(req, res, next) => {
+  console.log("validate vault item middleware hit");
+  next();
+  }, addVaultItem,(req, res, next)=>{
+  console.log("Add vault item handler hit");
+  next();
+  });
+router.get("/items", authenticateToken, getAllVaultItems);
+router.get("/items/:id",authenticateToken, validateVaultItemId, getVaultItemsByUserId);
+router.post("/test", rateLimiter, (req, res) => {
   res.send("Test route");
 });
 router.use((req, res) => {

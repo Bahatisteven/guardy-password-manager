@@ -14,20 +14,32 @@ const signUp = async (req, res) => {
   try {
     const { error } = validateSignUp(req.body);
     if (error) {
+      logger.warn(`Validation error: ${error.details[0].message}`);
       return res.status(400).json({ messsage: error.details[0].message });
     }
 
     const {username, email, password} = req.body;
+
     const existingUser = await findUserByEmail(email);
     if (existingUser) {
+      logger.info(`User with email ${email} already exists.`);
       return res.status(400).json({message: "A user with this email already exists."});
     }
-    const passwordHash = await argon2.hash(password);
+
+    let passwordHash;
+    try {
+      passwordHash = await argon2.hash(password);
+    } catch (error) {
+      logger.error("Error hashing password:", error);
+      return res.status(500).json({ message: "An error occurred while processing your request." });
+    }
     
     const user = await createUser(username, email, passwordHash);
+    logger.info(`User ${email} created successfully.`);
 
     const token = generateToken({ id: user.id, email: user.email });
     const refreshToken = generateRefreshToken({id: user.id, email: user.email});
+    logger.info(`Tokens generated for user ${email}`);
 
     res.cookie("token", token, accessCookieOptions);
     res.cookie("refreshToken", refreshToken, refreshTokenCookieOptions);

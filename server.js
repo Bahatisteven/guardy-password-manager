@@ -7,6 +7,7 @@ import cors from "cors";
 import morgan from "morgan";
 import compression from "compression";
 import rateLimit from "./middleware/rateLimit.js";
+import logger from "./utils/logger.js";
 import router from "./routes/index.js";
 
 
@@ -26,8 +27,9 @@ app.use(morgan("combined"));
 app.use(compression());
 
 console.log("Router from index.js",router );
-app.use("/api", rateLimit);
+
 app.get("/api/health", (req, res) => {
+  logger.info("Health check route hit");
   res.status(200).json({ message: "Server is healthy" });
 });
 
@@ -38,7 +40,7 @@ app.use((req, res) => {
 });
 
 app.use((err, req, res, next) => {
-  console.error(err.stack);
+  logger.error(err.stack);
   res.status(500).json({ message: "An unexpected error occurred"});
 });
 
