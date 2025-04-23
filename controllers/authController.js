@@ -12,11 +12,7 @@ import { refreshTokenCookieOptions } from "../utils/jwt.js";
 
 const signUp = async (req, res) => {
   try {
-    const { error } = validateSignUp(req.body);
-    if (error) {
-      logger.warn(`Validation error: ${error.details[0].message}`);
-      return res.status(400).json({ messsage: error.details[0].message });
-    }
+    console.log("signup handler hit");
 
     const {username, email, password} = req.body;
 

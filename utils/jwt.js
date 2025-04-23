@@ -1,3 +1,6 @@
+import dotenv from "dotenv";
+dotenv.config();
+
 import jwt from "jsonwebtoken";
 
 export const generateToken = (payload) => {
@@ -27,6 +30,6 @@ export const refreshTokenCookieOptions = {
 export const accessCookieOptions = {
   httpOnly: true,
   secure: true,
-  sameSite: "attribute",
-  maxAge: parseInt(process.env.COOKIE_EXPIRATION * 10), 
+  sameSite: "strict",
+  maxAge: parseInt(process.env.COOKIE_EXPIRATION * 10) || 36000, 
 };

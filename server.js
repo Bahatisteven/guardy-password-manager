@@ -26,14 +26,14 @@ app.use(cors({
 app.use(morgan("combined"));
 app.use(compression());
 
-console.log("Router from index.js",router );
-
 app.get("/api/health", (req, res) => {
   logger.info("Health check route hit");
   res.status(200).json({ message: "Server is healthy" });
 });
 
 app.use("/api", router);
+
+app.use("/api", rateLimit);
 
 app.use((req, res) => {
   res.status(404).json({ message: "Route not found" });

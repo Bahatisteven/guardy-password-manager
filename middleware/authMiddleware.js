@@ -24,14 +24,9 @@ const authenticateToken = (req, res, next) => {
 
 // middleware to authenticate login
 
-const authenticateLogin = async (req, res) => {
+const authenticateLogin = async (req, res, next) => {
   try {
     const { email, password } = req.body;
-
-    const { error } = validateLogin(req.body);
-    if (error) {
-      return res.status(400).json({ message: error.details[0].message });
-    }
 
     const user = await findUserByEmail(email);
     if (!user) {

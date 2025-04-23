@@ -6,7 +6,7 @@ const rateLimiter = rateLimit({
   message: "Too many requests. Please try again later.",
   standardHeaders: true,
   legacyHeaders: false,
-  handler: (res, req, next, options) => {
+  handler: (req, res, next, options) => {
     console.log("Rate limiter triggered");
     res.status(429).json({ message: options.message });
   },

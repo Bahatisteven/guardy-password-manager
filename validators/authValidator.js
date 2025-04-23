@@ -1,4 +1,5 @@
 import Joi from "joi";
+import logger from "../utils/logger.js";
 
 const signUpSchema = Joi.object({
   username: Joi.string().min(3).max(30).required().messages({
@@ -19,11 +20,15 @@ const signUpSchema = Joi.object({
   }),
 });
 
-export const validateSignUp = (data) => {
-  const { error } = signUpSchema.validate(data, { abortEarly: false });
+export const validateSignUp = (req, res, next) => {
+  const { error } = signUpSchema.validate(req.body, { abortEarly: false });
+
   if (error) {
-    return { error: error.details.map((detail) => detail.message) }; // return all error msg as an array
+    const messages = error.details.map(detail => detail.message);// return all error msg as an array
+    logger.warn(`Validation error: ${messages.join(', ')}`);
+    return res.status(400).json({ errors: messages  }); 
   }
+
   next();
 };
 
@@ -37,6 +42,7 @@ const loginSchema = Joi.object({
 export const validateLogin = (req, res, next) => {
   const { error } = loginSchema.validate(req.body);
   if (error) {
+    logger.info(`Validation on login error: ${error.details[0].message}`);
     return res.status(400).json({ message: error.details[0].message });
   }
   next();
