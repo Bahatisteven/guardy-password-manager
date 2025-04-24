@@ -1,6 +1,9 @@
+import dotenv from "dotenv";
+dotenv.config();
+
 import jwt from "jsonwebtoken";
+import argon2 from "argon2";
 import { findUserByEmail } from "../models/User.js";
-import { validateLogin } from "../validators/authValidator.js";
 import logger from "../utils/logger.js";
 import { sendEmail } from "../utils/sendEmail.js";
 
@@ -8,14 +11,24 @@ import { sendEmail } from "../utils/sendEmail.js";
 // middleware to authenticate JWT token
 
 const authenticateToken = (req, res, next) => {
-  const token = req.headers["authorization"]?.split("")[1];
-  if (!token) return res.status(401).json({ message: "Access token is missing or invalid." });
+  const authHeader = req.get("authorization");
+  console.log("Authorization header:", authHeader);
+
+  const token = authHeader?.split(" ")[1];
+  console.log("Extracted token:", token);
+  if (!token) {
+    logger.error("Access token is missing or invalid");
+    return res.status(401).json({ message: "Access token is missing or invalid." });
+  }
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    console.log("Decoded token:", decoded);
+    
     req.user_id = decoded.id;
     next();
   } catch (error) {
+    logger.error("Error during token authentication:", error);
     return res.status(403).json({ message: "Invalid token or expired token." });
   }
 };
@@ -30,15 +43,19 @@ const authenticateLogin = async (req, res, next) => {
 
     const user = await findUserByEmail(email);
     if (!user) {
+      logger.error("Invalid email or password at the user check");
       return res.status(401).json({ message: "Invalid email or password." });
     }
 
-    const isPasswordValid = await user.argon2.verify(user.password_hash, password);
+    const isPasswordValid = await argon2.verify(user.password_hash, password);
     if (!isPasswordValid) {
+      console.log("Password verification failed");
+      logger.error("Invalid email or password at the isPasswordValid check");
       return res.status(401).json({ message: "Invalid email or password" });
     }
 
     req.user_id = user.id;
+    console.log("user authenticated successfully");
     next();
     
   } catch (error) {

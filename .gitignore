@@ -6,3 +6,6 @@ node_modules
 build
 # ignore log files
 *.log
+# ignore logs
+combined.log
+error.log

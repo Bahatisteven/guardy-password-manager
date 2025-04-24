@@ -12,8 +12,6 @@ import { refreshTokenCookieOptions } from "../utils/jwt.js";
 
 const signUp = async (req, res) => {
   try {
-    console.log("signup handler hit");
-
     const {username, email, password} = req.body;
 
     const existingUser = await findUserByEmail(email);
@@ -56,15 +54,23 @@ const login = async (req, res) => {
   try {
     const userId = req.user_id;
     const user = await findUserById(userId);
+
+    if (!user) {
+      logger.error("User not found during login");
+      return res.status(404).json({ message: "User not found." });
+    }
     
+    // generate tokens
     const token = generateToken({ id: user.id, email: user.email });
     const refreshToken = generateRefreshToken({ id: user.id, email: user.email });
 
-    res.cookie("token", token, cookieOptions);
+    // set the tokens in cookies 
+    res.cookie("token", token, accessCookieOptions);
     res.cookie("refreshToken", refreshToken, refreshTokenCookieOptions);
 
     const { password_hash, ...safeUser } = user;
-    logger.info(`User ${email} logged in successfully.`);
+
+    logger.info(`User ${user.email} logged in successfully.`);
     res.status(200).json({ user: safeUser });
   } catch(error) {
     logger.error("Error during login:", error);
