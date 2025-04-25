@@ -24,7 +24,7 @@ const authenticateToken = (req, res, next) => {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     console.log("Decoded token:", decoded);
-    
+
     req.user_id = decoded.id;
     next();
   } catch (error) {
@@ -39,21 +39,37 @@ const authenticateToken = (req, res, next) => {
 
 const authenticateLogin = async (req, res, next) => {
   try {
-    const { email, password } = req.body;
+    //const { email, password } = req.body;
+    const rawEmail = String(req.body.email).trim().toLowerCase();
+    const rawPassword = String(req.body.password).trim();
 
-    const user = await findUserByEmail(email);
+    console.log("Login attempt:");
+    console.log("Email:", `--${rawEmail}--`);
+    console.log("Password:", `--${rawPassword}--`);
+
+
+    // check if user exists
+    const user = await findUserByEmail(rawEmail);//email
     if (!user) {
       logger.error("Invalid email or password at the user check");
       return res.status(401).json({ message: "Invalid email or password." });
     }
 
-    const isPasswordValid = await argon2.verify(user.password_hash, password);
+    // check if password is correct
+    console.log("Hash from DB:", `--${user.password_hash}--`);
+    console.log("Hash length:", user.password_hash.length);
+
+
+    // check if password is correct
+    const isPasswordValid = await argon2.verify(user.password_hash, rawPassword);
+    console.log("Password verification result:", isPasswordValid);
     if (!isPasswordValid) {
       console.log("Password verification failed");
       logger.error("Invalid email or password at the isPasswordValid check");
       return res.status(401).json({ message: "Invalid email or password" });
     }
 
+    // set user_id in request
     req.user_id = user.id;
     console.log("user authenticated successfully");
     next();
@@ -80,10 +96,12 @@ const sendVerificationEmail = async (req, res) => {
       return res.status(404).json({ message: "User not found." });
     }
 
+    // generate verification token
     const token = jwt.sign({ id: user.id, email: user.email } , process.env.JWT_SECRET, { expiresIn: process.env.VERIFICATION_TOKEN_EXPIRATION });
 
     const verificationUrl = `${process.env.FRONTEND_URL }/verify?token=${token}`;
 
+    // send verification email
     const emailContent = await sendEmail({
       to: email,
       subject: "Verify Your Email Address.",
@@ -91,6 +109,7 @@ const sendVerificationEmail = async (req, res) => {
       html: `<p>Please verify your email address by clicking the link below:</p><a href="${verificationUrl}">${verificationUrl}</a>`,
     });
     
+    // check if email sent
     const emailSent = await sendEmail({ emailContent });
     if (!emailSent) {
       return res.status(500).json({ message: "Failed to send verification email." });

@@ -15,29 +15,41 @@ const signUp = async (req, res) => {
     const {username, email, password} = req.body;
 
     const existingUser = await findUserByEmail(email);
+    console.log("Looking up user with email:", "bahatistevev@example.com");
     if (existingUser) {
       logger.info(`User with email ${email} already exists.`);
       return res.status(400).json({message: "A user with this email already exists."});
     }
 
+    // hash the password
     let passwordHash;
     try {
-      passwordHash = await argon2.hash(password);
+      const raw = String(password).trim();
+      passwordHash = await argon2.hash(raw);
+      console.log("Raw password during signup:", raw);
+      console.log("Generated hash during signup:", passwordHash);
+      const ok = await argon2.verify(passwordHash, raw);
+      console.log("password verification:", ok);
     } catch (error) {
       logger.error("Error hashing password:", error);
       return res.status(500).json({ message: "An error occurred while processing your request." });
     }
     
+    
+    // create the user
     const user = await createUser(username, email, passwordHash);
     logger.info(`User ${email} created successfully.`);
 
+    // generate tokens
     const token = generateToken({ id: user.id, email: user.email });
     const refreshToken = generateRefreshToken({id: user.id, email: user.email});
     logger.info(`Tokens generated for user ${email}`);
 
+    // set the tokens in cookies
     res.cookie("token", token, accessCookieOptions);
     res.cookie("refreshToken", refreshToken, refreshTokenCookieOptions);
 
+    // send the response excluding the password
     const { password_hash, ...safeUser } = user;
     logger.info(`User ${email} signed up successfully.`);
     res.status(201).json({ user: safeUser });
