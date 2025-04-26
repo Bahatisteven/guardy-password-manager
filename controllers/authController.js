@@ -15,7 +15,7 @@ const signUp = async (req, res) => {
     const {username, email, password} = req.body;
 
     const existingUser = await findUserByEmail(email);
-    console.log("Looking up user with email:", "bahatistevev@example.com");
+    // console.log("Looking up user with email:", "bahatistevev@example.com");
     if (existingUser) {
       logger.info(`User with email ${email} already exists.`);
       return res.status(400).json({message: "A user with this email already exists."});
@@ -24,7 +24,8 @@ const signUp = async (req, res) => {
     // hash the password
     let passwordHash;
     try {
-      const raw = String(password).trim();
+      const raw = String(password);
+      console.log("Raw password:", raw);
       passwordHash = await argon2.hash(raw);
       console.log("Raw password during signup:", raw);
       console.log("Generated hash during signup:", passwordHash);

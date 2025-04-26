@@ -2,7 +2,7 @@ import dotenv from "dotenv";
 dotenv.config();
 
 import jwt from "jsonwebtoken";
-import argon2 from "argon2";
+import * as argon2 from "argon2";
 import { findUserByEmail } from "../models/User.js";
 import logger from "../utils/logger.js";
 import { sendEmail } from "../utils/sendEmail.js";
@@ -60,9 +60,11 @@ const authenticateLogin = async (req, res, next) => {
     console.log("Hash length:", user.password_hash.length);
 
 
+    console.log(rawPassword, user.password_hash);
+    
     // check if password is correct
-    const isPasswordValid = await argon2.verify(user.password_hash, rawPassword);
-    console.log("Password verification result:", isPasswordValid);
+    let isPasswordValid = await argon2.verify(user.password_hash, rawPassword);
+    console.log("Password verification result test:", isPasswordValid);
     if (!isPasswordValid) {
       console.log("Password verification failed");
       logger.error("Invalid email or password at the isPasswordValid check");

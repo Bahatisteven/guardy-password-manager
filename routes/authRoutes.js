@@ -14,6 +14,7 @@ router.post("/signup", (req, res, next) => {
   console.log("signup handler hit");
   next();
 }, signUp);
+
 router.post("/login", validateLogin,(req, res, next) => {
   console.log("validate login handler hit!");
   next();
@@ -24,6 +25,7 @@ router.post("/login", validateLogin,(req, res, next) => {
   console.log("login handler hit!");
   next();
 });
+
 router.post("/logout", logout);
 
 

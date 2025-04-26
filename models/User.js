@@ -27,6 +27,8 @@ const createUser = async ( username, email, password) => {
 
 
 const findUserByEmail = async (email) => {
+  console.log("Finding user by email:", email);
+  
   try {
     const result = await Pool.query(
       "SELECT * FROM users WHERE email = $1",
