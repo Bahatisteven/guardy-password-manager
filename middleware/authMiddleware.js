@@ -63,7 +63,7 @@ const authenticateLogin = async (req, res, next) => {
     console.log(rawPassword, user.password_hash);
     
     // check if password is correct
-    let isPasswordValid = await argon2.verify(user.password_hash, rawPassword);
+    const isPasswordValid = await argon2.verify(user.password_hash, rawPassword);
     console.log("Password verification result test:", isPasswordValid);
     if (!isPasswordValid) {
       console.log("Password verification failed");

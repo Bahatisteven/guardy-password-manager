@@ -1,4 +1,4 @@
-import { createUser, findUserByEmail } from "../models/User.js";
+import { createUser, findUserByEmail, findUserById } from "../models/User.js";
 import { generateToken } from "../utils/jwt.js";
 import argon2 from "argon2";
 import { validateSignUp } from "../validators/authValidator.js";
@@ -15,7 +15,6 @@ const signUp = async (req, res) => {
     const {username, email, password} = req.body;
 
     const existingUser = await findUserByEmail(email);
-    // console.log("Looking up user with email:", "bahatistevev@example.com");
     if (existingUser) {
       logger.info(`User with email ${email} already exists.`);
       return res.status(400).json({message: "A user with this email already exists."});
@@ -24,21 +23,20 @@ const signUp = async (req, res) => {
     // hash the password
     let passwordHash;
     try {
-      const raw = String(password);
-      console.log("Raw password:", raw);
-      passwordHash = await argon2.hash(raw);
-      console.log("Raw password during signup:", raw);
-      console.log("Generated hash during signup:", passwordHash);
-      const ok = await argon2.verify(passwordHash, raw);
-      console.log("password verification:", ok);
+      passwordHash = await argon2.hash(password);
+      if (!passwordHash) {
+        logger.error("Password hashing failed.");
+        return res.status(500).json({ message: "An error occurred while processing your request." });
+      }
     } catch (error) {
       logger.error("Error hashing password:", error);
       return res.status(500).json({ message: "An error occurred while processing your request." });
     }
     
-    
     // create the user
     const user = await createUser(username, email, passwordHash);
+    const storedUser = await findUserByEmail(email);
+    console.log("Stored hash in DB:", storedUser.password_hash);
     logger.info(`User ${email} created successfully.`);
 
     // generate tokens
@@ -54,6 +52,7 @@ const signUp = async (req, res) => {
     const { password_hash, ...safeUser } = user;
     logger.info(`User ${email} signed up successfully.`);
     res.status(201).json({ user: safeUser });
+
   } catch (error) {
     logger.error("Error during signup:", error);
     res.status(500).json({message: "An error occurred during signup."})
