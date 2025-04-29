@@ -9,8 +9,19 @@ import { sendEmail } from "../utils/sendEmail";
 // middleware to authenticate JWT token
 
 const authenticateToken = (req, res, next) => {
-  const token = req.headers["authorization"]?.split("")[1];
-  if (!token) return res.status(401).json({ message: "Access token is missing or invalid." });
+  const authHeader = req.get("authorization");
+
+  if (!authHeader) {
+    logger.error("Authorization header is missing");
+    return res.status(401).json({ message: "An error occured while trying to authenticate token." });
+  }
+  const token = authHeader?.split(" ")[1];
+  console.log("Extracted token:", token);
+
+  if (!token) {
+    logger.error("Access token is missing or invalid");
+    return res.status(401).json({ message: "Access token is missing or invalid." });
+  }
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
@@ -28,19 +39,18 @@ const authenticateToken = (req, res, next) => {
 const authenticateLogin = async (req, res) => {
   try {
     const { email, password } = req.body;
-
-    const { error } = validateLogin(req.body);
-    if (error) {
-      return res.status(400).json({ message: error.details[0].message });
-    }
-
+    
+    // check if user exists
     const user = await findUserByEmail(email);
     if (!user) {
       return res.status(401).json({ message: "Invalid email or password." });
     }
 
-    const isPasswordValid = await user.argon2.verify(user.password_hash, password);
+    // check if password is correct
+    const isPasswordValid = await argon2.verify(user.password_hash, password);
+
     if (!isPasswordValid) {
+      logger.error("Invalid email or password at the isPasswordValid check");
       return res.status(401).json({ message: "Invalid email or password" });
     }
 
