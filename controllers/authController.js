@@ -95,10 +95,23 @@ const login = async (req, res) => {
 
 const logout = async (req, res) => {
   try {
+
+    const userId = req.user_id;
+
+    const user = await findUserById(userId);
+
+    if (!user) {
+      logger.error("User not found during logout");
+      return res.status(404).json({ message: "User not found."});
+    }
+
+    // clear cookies
     res.clearCookie("token");
     res.clearCookie("refreshToken");
+
     logger.info("User logged out successfully.");
     res.status(200).json({ message: "Logged out successfully." });
+
   } catch (error) {
     logger.error("Error during logout:", error);
     res.status(500).json({ message: "An error occurred during logout." });

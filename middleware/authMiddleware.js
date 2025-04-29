@@ -12,10 +12,14 @@ import { sendEmail } from "../utils/sendEmail.js";
 
 const authenticateToken = (req, res, next) => {
   const authHeader = req.get("authorization");
-  console.log("Authorization header:", authHeader);
 
+  if (!authHeader) {
+    logger.error("Authorization header is missing");
+    return res.status(401).json({ message: "An error occured while trying to authenticate token." });
+  }
   const token = authHeader?.split(" ")[1];
   console.log("Extracted token:", token);
+
   if (!token) {
     logger.error("Access token is missing or invalid");
     return res.status(401).json({ message: "Access token is missing or invalid." });
@@ -39,41 +43,25 @@ const authenticateToken = (req, res, next) => {
 
 const authenticateLogin = async (req, res, next) => {
   try {
-    //const { email, password } = req.body;
-    const rawEmail = String(req.body.email).trim().toLowerCase();
-    const rawPassword = String(req.body.password).trim();
-
-    console.log("Login attempt:");
-    console.log("Email:", `--${rawEmail}--`);
-    console.log("Password:", `--${rawPassword}--`);
-
-
+    const { email, password } = req.body;
+    
     // check if user exists
-    const user = await findUserByEmail(rawEmail);//email
+    const user = await findUserByEmail(email);
     if (!user) {
       logger.error("Invalid email or password at the user check");
       return res.status(401).json({ message: "Invalid email or password." });
     }
 
     // check if password is correct
-    console.log("Hash from DB:", `--${user.password_hash}--`);
-    console.log("Hash length:", user.password_hash.length);
+    const isPasswordValid = await argon2.verify(user.password_hash, password);
 
-
-    console.log(rawPassword, user.password_hash);
-    
-    // check if password is correct
-    const isPasswordValid = await argon2.verify(user.password_hash, rawPassword);
-    console.log("Password verification result test:", isPasswordValid);
     if (!isPasswordValid) {
-      console.log("Password verification failed");
       logger.error("Invalid email or password at the isPasswordValid check");
       return res.status(401).json({ message: "Invalid email or password" });
     }
 
     // set user_id in request
     req.user_id = user.id;
-    console.log("user authenticated successfully");
     next();
     
   } catch (error) {

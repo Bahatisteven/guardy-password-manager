@@ -16,10 +16,9 @@ const signUpSchema = Joi.object({
   password: Joi.string()
   .min(4)
   .max(64)
-  //.pattern(new RegExp(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/),
-  //{ name: "strongPassword" }
-
-.required().messages({
+  .pattern(new RegExp(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/), { name: "strongPassword" })
+  .required()
+  .messages({
     "string.empty": "Password is required",
     "string.min": "Password must be at least 8 characters long",
     "string.pattern.name": "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character",
@@ -41,7 +40,7 @@ export const validateSignUp = (req, res, next) => {
 
 const loginSchema = Joi.object({
   email: Joi.string().email().required(),
-  password: Joi.string().min(4).required(),
+  password: Joi.string().min(8).required(),
 });
 
 
