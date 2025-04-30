@@ -1,11 +1,7 @@
 import { createUser, findUserByEmail, findUserById } from "../models/User.js";
-import { generateToken } from "../utils/jwt.js";
+import { generateToken, generateRefreshToken, refreshTokenCookieOptions, accessCookieOptions } from "../utils/jwt.js";
 import argon2 from "argon2";
-import { validateSignUp } from "../validators/authValidator.js";
 import logger from "../utils/logger.js";
-import { accessCookieOptions } from "../utils/jwt.js";
-import { generateRefreshToken } from "../utils/jwt.js";
-import { refreshTokenCookieOptions } from "../utils/jwt.js";
 
 
 // signUp function to create a new user and generate tokens
@@ -35,8 +31,6 @@ const signUp = async (req, res) => {
     
     // create the user
     const user = await createUser(username, email, passwordHash);
-    const storedUser = await findUserByEmail(email);
-    console.log("Stored hash in DB:", storedUser.password_hash);
     logger.info(`User ${email} created successfully.`);
 
     // generate tokens
@@ -120,32 +114,4 @@ const logout = async (req, res) => {
 
 
 
-// middleware to refresh the access token using the refresh token
-
-const refreshToken = async (req, res) => {
-  try {
-    const refreshToken = req.cookies.refreshToken;
-    if (!refreshToken) {
-      return res.status(401).json({ message: "Refresh token is missing."});
-    }
-        
-    const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
-
-    // set the new access token in a cookie
-    const token = generateToken({ id: decoded.id, email: decoded.email });
-
-    res.cookie("token", token, accessCookieOptions);
-
-    logger.info("Access token refreshed successfully.");
-    res.status(200).json({ message: "Access token refreshed successfully." });
-  } catch (error) {
-    logger.error("Error during token refresh:", error);
-    res.status(403).json({ message: "Invalid or expired refresh token." });
-  }
-};
-
-
-
-
-
-export { signUp, login, logout, refreshToken };
+export { signUp, login, logout };

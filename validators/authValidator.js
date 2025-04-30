@@ -16,7 +16,8 @@ const signUpSchema = Joi.object({
   password: Joi.string()
   .min(4)
   .max(64)
-  .pattern(new RegExp(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/), { name: "strongPassword" })
+  .pattern(new RegExp(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/), 
+  { name: "strongPassword" })
   .required()
   .messages({
     "string.empty": "Password is required",

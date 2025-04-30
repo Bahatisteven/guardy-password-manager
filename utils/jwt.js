@@ -3,22 +3,22 @@ dotenv.config();
 
 import jwt from "jsonwebtoken";
 
-export const generateToken = (payload) => {
+const generateToken = (payload) => {
   return jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRATION });
 };
 
 
-export const generateRefreshToken = (payload) => {
+const generateRefreshToken = (payload) => {
   return jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: process.env.JWT_REFRESH_EXPIRATION });
 };
 
 
-export const verifyToken = (token) => {
+const verifyToken = (token) => {
   return jwt.verify(token, process.env.JWT_SECRET)
 };
 
 
-export const refreshTokenCookieOptions = {
+const refreshTokenCookieOptions = {
   httpOnly: true,
   secure: process.env.NODE_ENV === "production",
   sameSite: "strict",
@@ -27,9 +27,14 @@ export const refreshTokenCookieOptions = {
 
 
 
-export const accessCookieOptions = {
+const accessCookieOptions = {
   httpOnly: true,
   secure: true,
   sameSite: "strict",
   maxAge: parseInt(process.env.COOKIE_EXPIRATION * 10) || 36000, 
 };
+
+
+
+
+export { generateToken, generateRefreshToken, verifyToken, refreshTokenCookieOptions, accessCookieOptions };
