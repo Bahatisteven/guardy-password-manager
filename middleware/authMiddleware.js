@@ -4,6 +4,7 @@ dotenv.config();
 import jwt from "jsonwebtoken";
 import * as argon2 from "argon2";
 import { findUserByEmail } from "../models/User.js";
+import { generateToken, accessCookieOptions } from "../utils/jwt.js";
 import logger from "../utils/logger.js";
 import { sendEmail } from "../utils/sendEmail.js";
 
@@ -11,32 +12,54 @@ import { sendEmail } from "../utils/sendEmail.js";
 // middleware to authenticate JWT token
 
 const authenticateToken = (req, res, next) => {
-  const authHeader = req.get("authorization");
+  const authHeader = req.get("authorization");  //
 
-  if (!authHeader) {
-    logger.error("Authorization header is missing");
-    return res.status(401).json({ message: "An error occured while trying to authenticate token." });
-  }
+  // check if the token is in the format "Bearer <token>"
   const token = authHeader?.split(" ")[1];
-  console.log("Extracted token:", token);
 
   if (!token) {
     logger.error("Access token is missing or invalid");
     return res.status(401).json({ message: "Access token is missing or invalid." });
   }
 
+  // verify the token
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    console.log("Decoded token:", decoded);
-
     req.user_id = decoded.id;
     next();
+
   } catch (error) {
     logger.error("Error during token authentication:", error);
     return res.status(403).json({ message: "Invalid token or expired token." });
   }
 };
 
+
+// middleware to refresh the access token
+
+const refreshToken = async (req, res) => {
+  try {
+    const refreshToken = req.cookies.refreshToken;
+
+    if (!refreshToken) {
+      return res.status(401).json({ message: "Refresh token is missing."});
+    }
+        
+    const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
+
+    // set the new access token in a cookie
+    const token = generateToken({ id: decoded.id, email: decoded.email });
+
+    res.cookie("token", token, accessCookieOptions);
+
+    logger.info("Access token refreshed successfully.");
+    res.status(200).json({ message: "Access token refreshed successfully." });
+    
+  } catch (error) {
+    logger.error("Error during token refresh:", error);
+    res.status(403).json({ message: "Invalid or expired refresh token." });
+  }
+};
 
 
 // middleware to authenticate login
@@ -71,11 +94,7 @@ const authenticateLogin = async (req, res, next) => {
 };
 
 
-
-
-
 // middleware to send verification email
-
 
 const sendVerificationEmail = async (req, res) => {
   const { email } = req.body;
@@ -113,4 +132,4 @@ const sendVerificationEmail = async (req, res) => {
   }
 };
 
-export { authenticateToken, authenticateLogin, sendVerificationEmail };
+export { authenticateToken, refreshToken, authenticateLogin, sendVerificationEmail };
