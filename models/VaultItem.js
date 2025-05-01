@@ -31,4 +31,19 @@ const getVaultItemsByUserId = async (userId, limits, offset) => {
 };
 
 
-export { createVaultItem, getVaultItemsByUserId };
+
+const getVaultItemByNameAndType = async (userId, name, type) => {
+  try {
+    const result = await pool.query(
+      "SELECT * FROM vault_items WHERE user_id = $1 AND name = $2 AND type = $3",
+      [userId, name, type]
+    );
+    return result.rows[0];
+  } catch (error) {
+    logger.error("Error retrieving vault item:", error);
+    throw error;
+  }
+}
+
+
+export { createVaultItem, getVaultItemsByUserId, getVaultItemByNameAndType };
