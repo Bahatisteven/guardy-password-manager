@@ -1,16 +1,18 @@
-import { createVaultItem } from "../models/VaultItem.js";
+import { createVaultItem, getVaultItemsByUserId, getVaultItemByNameAndType } from "../models/VaultItem.js";
 import { validateVaultItem } from "../validators/vaultValidator.js";
 import logger  from "../utils/logger.js";
 import { DB_ERRORS } from "../utils/dbErrors.js";
 
 const addVaultItem = async (req, res) => {
   try {
+
     const userId = req.user_id;
     if (!userId) {
       logger.error("User ID is missing in the request.");
       return res.status(400).json({ message: "User ID is missing. Please log in and try again." });
     }
 
+    // validate the request body
     const { error } = validateVaultItem.validate(req.body, { abortEarly: false });
     if (error) {
       logger.error("Validation error:", error.details[0].message);
@@ -19,12 +21,21 @@ const addVaultItem = async (req, res) => {
 
     const { name, type, data } = req.body;
   
+    // check if the vault item alredy exists
+    const existingVaultItem = await getVaultItemByNameAndType(userId, name, type);
+    if (existingVaultItem) {
+      logger.error(`Vault item with name ${name} and type ${type} already exists for user $ {userId}.`);
+      return res.status(409).json({ message: "Vault item already exists."});
+    }
+    
+    // create the vault item
     const vaultItem = await createVaultItem (userId, name, type, data);    
     if (!vaultItem) {
       logger.error(`Failed to create vault item for user ${userId}.`);
       return res.status(500).json({ message: "Failed to create vault item." });
     } 
 
+    // remove sensitive data from the response
     const { data: encryptedData, ...safeVaultItem } = vaultItem;
     logger.info(`Vault item created successfully for user ${userId}.`);
     return res.status(201).json({ message: "Vault item created successfully.", vaultItem: safeVaultItem });

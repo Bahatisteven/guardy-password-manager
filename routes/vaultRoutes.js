@@ -12,7 +12,7 @@ const router = express.Router();
 
 // router to handle vault item routes
 
-router.post("/items",rateLimiter, authenticateToken, validateVaultItem, addVaultItem);
+router.post("/items", authenticateToken, validateVaultItem, addVaultItem);
 
 router.get("/items", authenticateToken, getAllVaultItems);
 
