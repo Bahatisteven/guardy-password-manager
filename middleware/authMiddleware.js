@@ -44,7 +44,8 @@ const refreshToken = async (req, res) => {
     if (!refreshToken) {
       return res.status(401).json({ message: "Refresh token is missing."});
     }
-        
+     
+    // verify the refresh token
     const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
 
     // set the new access token in a cookie

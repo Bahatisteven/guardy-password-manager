@@ -1,11 +1,10 @@
 import express from "express";
 import rateLimiter from "../middleware/rateLimit.js";
-import { addVaultItem } from "../controllers/vaultController.js";
+import { addVaultItem, getAllVaultItems } from "../controllers/vaultController.js";
 import { getVaultItemsByUserId } from "../models/VaultItem.js";
 import { authenticateToken } from "../middleware/authMiddleware.js";
-import { validateVaultItem } from "../validators/vaultValidator.js";
-import { validateVaultItemId } from "../validators/vaultValidator.js";
-import { getAllVaultItems } from "../controllers/vaultController.js";
+import { validateVaultItem, validateVaultItemId } from "../validators/vaultValidator.js";
+
 
 
 const router = express.Router();
