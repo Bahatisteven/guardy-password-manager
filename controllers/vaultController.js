@@ -14,6 +14,7 @@ const addVaultItem = async (req, res) => {
     const { name, type, data } = req.body;
   
     // check if the vault item alredy exists
+    
     const existingVaultItem = await getVaultItemByNameAndType(userId, name, type);
     if (existingVaultItem) {
       logger.error(`Vault item with name ${name} and type ${type} already exists for user $ {userId}.`);

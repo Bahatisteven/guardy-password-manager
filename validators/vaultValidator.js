@@ -2,6 +2,7 @@ import Joi from "joi";
 
 
 // validate vault item schema
+
 const validateVaultItemSchema = Joi.object({
   name: Joi.string().optional().default("Unnamed Item"),
   type: Joi.string()
@@ -18,12 +19,17 @@ const validateVaultItemSchema = Joi.object({
 });
 
 // validate vault item id schema
+
 const validateVaultItemIdSchema = Joi.object({
-  id: Joi.string()
-    .pattern(/^[0-9a-fA-F]{24}$/)
+  id: Joi.number()
+    .integer()
+    .positive()
     .required()
     .messages({
-      "string.pattern.name": "Invalid vault item ID format",
+      "string.base": "Vault item ID must be a number",
+      "number.integer": "Vault item ID must be an integer",
+      "number.positive": "Vault item ID must be a positive number",
+      "any.required": "Vault item ID is required",
     }),
 });
 
