@@ -1,5 +1,6 @@
 import { dbPool as pool } from "../config/db.js";
 import argon2 from "argon2";
+import { debugObject } from "../utils/debugObj.js";
 
 const createVaultItem = async (userId, name, type, data) => {
   try {
@@ -23,9 +24,11 @@ const getVaultItemsByUserId = async (userId, limits, offset) => {
       "SELECT * FROM vault_items WHERE user_id = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3",
       [userId, limits, offset]
     );
+    debugObject(result.rows);
     return result.rows;
   } catch (error) {
-    console.error("Error retrieving vault items:", error);
+    debugObject(error);
+    console.error("Error retrieving vault items:", { error: error.message});
     throw error;
   }
 };

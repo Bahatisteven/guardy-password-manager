@@ -15,15 +15,19 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 app.use(express.json());
+
 app.use(helmet({
   contentSecurityPolicy: false,
   crossOriginEmbedderPolicy: false,
 }));
+
 app.use(cors({
    origin: process.env.FRONTEND_URL || "*",
    Credentials: true,
    }));
+
 app.use(morgan("combined"));
+
 app.use(compression());
 
 app.get("/api/health", (req, res) => {
@@ -45,7 +49,7 @@ app.use((err, req, res, next) => {
 });
 
 
-app.listen(PORT, () => console.log(`Server started on port ${PORT}`));
+const server = app.listen(PORT, () => console.log(`Server started on port ${PORT}`));
 
 // gracefull shutdown
 

@@ -15,7 +15,7 @@ router.post("/items", authenticateToken, validateVaultItem, addVaultItem);
 
 router.get("/items", authenticateToken, getAllVaultItems);
 
-router.get("/items/:id",authenticateToken, validateVaultItemId, getVaultItemsByUserId);
+router.get("/items/:id",authenticateToken, validateVaultItemId, getAllVaultItems);
 
 router.post("/test", rateLimiter, (req, res) => {
   res.send("Test route");
