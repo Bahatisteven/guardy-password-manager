@@ -1,4 +1,4 @@
-import { createVaultItem, getVaultItemsByUserId, getVaultItemByNameAndType } from "../models/VaultItem.js";
+import { createVaultItem, getVaultItemsByUserId, getVaultItemByNameAndType, getTotalVaultItemsByUserId } from "../models/VaultItem.js";
 import logger  from "../utils/logger.js";
 import { DB_ERRORS } from "../utils/dbErrors.js";
 
@@ -67,13 +67,26 @@ const getAllVaultItems = async (req, res) => {
     const offset = (page - 1) * limit;
 
     const vaultItems = await getVaultItemsByUserId(userId, limit, offset);
+    const totalItems = await getTotalVaultItemsByUserId(userId);
+    const totalPages = Math.ceil(totalItems / limit);
+
     if (vaultItems.length === 0) {
       logger.info(`No vault items found for user ${userId}.`);
       return res.status(500).json({ message: "No vault items found.", vaultItems: [] });
     }
 
     logger.info(`Vault items retrieved successfully for user ${userId}.`);
-    return res.status(200).json({ message: "Vault items retrieved successfully.", vaultItems, pagination: { page, limit } });
+    
+    return res.status(200).json({
+      message: "Vault items retrieved successfully.",
+        vaultItems,
+        pagination: {
+          currentPage: page,
+          pageSize: limit,
+          totalItems,
+          totalPages
+        }
+    });
   } catch (error) {
     logger.error("Error retrieving vault items:", error.message);
     res.status(500).json({ message: "An error occurred while retrieving the vault items." });

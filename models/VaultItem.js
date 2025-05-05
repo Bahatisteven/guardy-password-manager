@@ -49,4 +49,18 @@ const getVaultItemByNameAndType = async (userId, name, type) => {
 }
 
 
-export { createVaultItem, getVaultItemsByUserId, getVaultItemByNameAndType };
+const getTotalVaultItemsByUserId = async (userId) => {
+  try {
+    const result = await pool.query(
+      "SELECT COUNT(*) AS TOTAL FROM vault_items WHERE user_id = $1",
+      [userId]
+    );
+    return parseInt(result.rows[0].count, 10);
+  } catch (error) {
+    logger.error("Error retrieving total vault items:", error);
+    throw error;
+  }
+};
+
+
+export { createVaultItem, getVaultItemsByUserId, getVaultItemByNameAndType, getTotalVaultItemsByUserId };
