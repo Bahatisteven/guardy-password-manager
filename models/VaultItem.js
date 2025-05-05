@@ -63,4 +63,18 @@ const getTotalVaultItemsByUserId = async (userId) => {
 };
 
 
-export { createVaultItem, getVaultItemsByUserId, getVaultItemByNameAndType, getTotalVaultItemsByUserId };
+const deleteVaultItemById = async (userId, id) => {
+  try {
+    const result = await pool.query(
+      "DELETE FROM vault_items WHERE user_id = $1 AND id = $2 RETURNING *",
+      [userId, id]
+    );
+    return result.rows[0];
+  } catch (error) {
+    logger.error("Error deleting vault item:", error);
+    throw error;
+  }
+};
+
+
+export { createVaultItem, getVaultItemsByUserId, getVaultItemByNameAndType, getTotalVaultItemsByUserId, deleteVaultItemById };

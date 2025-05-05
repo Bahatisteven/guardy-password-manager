@@ -1,4 +1,4 @@
-import { createVaultItem, getVaultItemsByUserId, getVaultItemByNameAndType, getTotalVaultItemsByUserId } from "../models/VaultItem.js";
+import { createVaultItem, getVaultItemsByUserId, getVaultItemByNameAndType, getTotalVaultItemsByUserId, deleteVaultItemById } from "../models/VaultItem.js";
 import logger  from "../utils/logger.js";
 import { DB_ERRORS } from "../utils/dbErrors.js";
 
@@ -76,7 +76,7 @@ const getAllVaultItems = async (req, res) => {
     }
 
     logger.info(`Vault items retrieved successfully for user ${userId}.`);
-    
+
     return res.status(200).json({
       message: "Vault items retrieved successfully.",
         vaultItems,
@@ -93,4 +93,31 @@ const getAllVaultItems = async (req, res) => {
   }
 };
 
-export { addVaultItem, getAllVaultItems };
+
+const deleteVaultItem = async (req, res) => {
+  try {
+    const userId = req.user_id;
+    const { id } = req.params;
+
+    if (!userId) {
+      logger.error("User ID is missing in the request. Ensure the user is authenticated.");
+      return res.status(401).json({ message: "Unauthorized. Please log in and try again."});
+    }
+
+    const result = await deleteVaultItemById(userId, id);
+
+    if (result.rowCount === 0) {
+      logger.error(`Failed to delete vault item with ID ${id} for user ${userId}.`);
+      return res.status(404).json({ message: "Failed to delete vault item. Item not found"});
+    }
+
+    logger.info(`Vault item with ID ${id} deleted successfully for user ${userId}.`);
+    return res.status(200).json({ message: "Vault item deleted successfully."});
+  } catch (error) {
+    logger.error("Error deleting vault item:", error.message);
+    res.status(500).json({ message: "An error occurred while deleting the vault item."});
+  }
+};
+
+
+export { addVaultItem, getAllVaultItems, deleteVaultItem };
