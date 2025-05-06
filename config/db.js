@@ -5,16 +5,20 @@ import pg from "pg";
 const { Pool } = pg;
 
 
+const dbName = process.env.NODE_ENV === "test" ? process.env.DB_NAME_TEST : process.env.DB_NAME;
+
 const dbPool = new Pool({
   user: process.env.DB_USER,
   host: process.env.DB_HOST,
-  database: process.env.DB_NAME,
+  database: dbName,
   password: process.env.DB_PASSWORD,
   port: process.env.DB_PORT,
+  query: jest.fn()
 });
 
 export { dbPool };
 
+if (process.env.NODE_ENV !== "test") {
 dbPool.query("SELECT NOW()", (err, res) => {
   if (err) {
     console.error("Error connecting to the database", err);
@@ -22,3 +26,4 @@ dbPool.query("SELECT NOW()", (err, res) => {
     console.log("Database connected successfully", res.rows[0]);
   }
 });
+}

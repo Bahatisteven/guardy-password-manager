@@ -1,5 +1,6 @@
 import { dbPool as pool } from "../config/db.js";
 import argon2 from "argon2";
+import logger from "../utils/logger.js";
 import { debugObject } from "../utils/debugObj.js";
 
 const createVaultItem = async (userId, name, type, data) => {
@@ -43,7 +44,7 @@ const getVaultItemByNameAndType = async (userId, name, type) => {
     );
     return result.rows[0];
   } catch (error) {
-    logger.error("Error retrieving vault item:", error);
+    console.error("Error retrieving vault item:", error);
     throw error;
   }
 }
@@ -57,7 +58,7 @@ const getTotalVaultItemsByUserId = async (userId) => {
     );
     return parseInt(result.rows[0].count, 10);
   } catch (error) {
-    logger.error("Error retrieving total vault items:", error);
+    console.error("Error retrieving total vault items:", error);
     throw error;
   }
 };
@@ -71,7 +72,7 @@ const deleteVaultItemById = async (userId, id) => {
     );
     return result.rows[0];
   } catch (error) {
-    logger.error("Error deleting vault item:", error);
+    console.error("Error deleting vault item:", error);
     throw error;
   }
 };
