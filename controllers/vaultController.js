@@ -1,4 +1,4 @@
-import { createVaultItem, getVaultItemsByUserId, getVaultItemByNameAndType, getTotalVaultItemsByUserId, deleteVaultItemById } from "../models/VaultItem.js";
+import { createVaultItem, getVaultItemByNameAndType, deleteVaultItemById, getFilteredVaultItems, getTotalFilteredVaultItems } from "../models/VaultItem.js";
 import logger  from "../utils/logger.js";
 import { DB_ERRORS } from "../utils/dbErrors.js";
 
@@ -62,12 +62,11 @@ const getAllVaultItems = async (req, res) => {
 
     // pagination support 
 
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
+    const { search, type, page= 1, limit = 10 } = req.query;
     const offset = (page - 1) * limit;
 
-    const vaultItems = await getVaultItemsByUserId(userId, limit, offset);
-    const totalItems = await getTotalVaultItemsByUserId(userId);
+    const vaultItems = await getFilteredVaultItems(userId,search,type, limit, offset);
+    const totalItems = await getTotalFilteredVaultItems(userId, search, type);
     const totalPages = Math.ceil(totalItems / limit);
 
     if (vaultItems.length === 0) {
@@ -81,8 +80,8 @@ const getAllVaultItems = async (req, res) => {
       message: "Vault items retrieved successfully.",
         vaultItems,
         pagination: {
-          currentPage: page,
-          pageSize: limit,
+          currentPage: parseInt(page, 10),
+          pageSize: parseInt(limit, 10),
           totalItems,
           totalPages
         }
@@ -106,7 +105,7 @@ const deleteVaultItem = async (req, res) => {
 
     const result = await deleteVaultItemById(userId, id);
 
-    if (result.rowCount === 0) {
+    if (!result) {
       logger.error(`Failed to delete vault item with ID ${id} for user ${userId}.`);
       return res.status(404).json({ message: "Failed to delete vault item. Item not found"});
     }

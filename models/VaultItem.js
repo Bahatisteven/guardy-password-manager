@@ -2,6 +2,7 @@ import { dbPool as pool } from "../config/db.js";
 import argon2 from "argon2";
 import logger from "../utils/logger.js";
 import { debugObject } from "../utils/debugObj.js";
+import util from "util";
 
 const createVaultItem = async (userId, name, type, data) => {
   try {
@@ -44,7 +45,7 @@ const getVaultItemByNameAndType = async (userId, name, type) => {
     );
     return result.rows[0];
   } catch (error) {
-    console.error("Error retrieving vault item:", error);
+    console.error("Error retrieving vault item:", error.message);
     throw error;
   }
 }
@@ -64,6 +65,53 @@ const getTotalVaultItemsByUserId = async (userId) => {
 };
 
 
+const getFilteredVaultItems = async (userId, search, type, limit, offset) => {
+  try {
+    const query = `
+      SELECT * FROM vault_items WHERE user_id = $1
+       ${search ? "AND name ILIKE $2" : ""}
+       ${type ? "AND type = $3" : ""}
+        ORDER BY created_at DESC LIMIT $4 OFFSET $5
+      `;
+
+      const values = [userId];
+      if (search) values.push(`%${search}%`);
+      if (type) values.push(type);
+      values.push(limit, offset);
+
+      const result = await pool.query(query, values);
+      return result.rows;
+  }catch (error) {
+    console.error("Error retrieving filtered vault items:", error.message);
+    throw error;
+  }
+};
+
+
+const getTotalFilteredVaultItems = async (userId, search, type, limit, offset) => {
+  try {
+    const query = `
+      SELECT COUNT(*) AS total FROM vault_items WHERE user_id = $1
+      ${search ? "AND name ILIKE $2" : ""}
+      ${type ? "AND type = $3" : ""}
+        ORDER BY created_at DESC LIMIT $4 OFFSET $5
+    `;
+
+    const values = [userId];
+    if (search) values.push(`%${search}%`);
+    if (type) values.push(type);
+    values.push(limit, offset);
+
+
+    const result = await pool.query(query, values);
+    return parseInt(result.rows[0].total, 10);
+  } catch(error) {
+    console.error("Error retrieving total filtered vault items:", error.message);
+    throw error;
+  }
+};
+
+
 const deleteVaultItemById = async (userId, id) => {
   try {
     const result = await pool.query(
@@ -72,10 +120,10 @@ const deleteVaultItemById = async (userId, id) => {
     );
     return result.rows[0];
   } catch (error) {
-    console.error("Error deleting vault item:", error);
+    console.error("Error deleting vault item:", util.inspect(error, { depth: null, colors: true}));
     throw error;
   }
 };
 
 
-export { createVaultItem, getVaultItemsByUserId, getVaultItemByNameAndType, getTotalVaultItemsByUserId, deleteVaultItemById };
+export { createVaultItem, getVaultItemsByUserId, getVaultItemByNameAndType, getTotalVaultItemsByUserId, deleteVaultItemById, getFilteredVaultItems, getTotalFilteredVaultItems };
