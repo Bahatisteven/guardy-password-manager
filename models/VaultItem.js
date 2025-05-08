@@ -67,41 +67,56 @@ const getTotalVaultItemsByUserId = async (userId) => {
 
 const getFilteredVaultItems = async (userId, search, type, limit, offset) => {
   try {
+    const conditions = ["user_id = $1"];
+    const values = [userId];
+
+    if (search) {
+      conditions.push(` name ILIKE $${values.length + 1}`);
+      values.push(`%${search}%`);
+    }
+
+    if (type) {
+      conditions.push(` type = $${values.length + 1}`);
+      values.push(type);
+    }
+
     const query = `
-      SELECT * FROM vault_items WHERE user_id = $1
-       ${search ? "AND name ILIKE $2" : ""}
-       ${type ? "AND type = $3" : ""}
-        ORDER BY created_at DESC LIMIT $4 OFFSET $5
+      SELECT * FROM vault_items
+      WHERE ${conditions.join(" AND ")}
+      ORDER BY created_at DESC
+      LIMIT $${values.length +1 } OFFSET $${values.length + 2}
       `;
 
-      const values = [userId];
-      if (search) values.push(`%${search}%`);
-      if (type) values.push(type);
-      values.push(limit, offset);
-
-      const result = await pool.query(query, values);
-      return result.rows;
-  }catch (error) {
+    values.push(limit, offset);
+      
+    const result = await pool.query(query, values);
+    return result.rows;
+  } catch (error) {
     console.error("Error retrieving filtered vault items:", error.message);
     throw error;
   }
 };
 
 
-const getTotalFilteredVaultItems = async (userId, search, type, limit, offset) => {
+const getTotalFilteredVaultItems = async (userId, search, type) => {
   try {
-    const query = `
-      SELECT COUNT(*) AS total FROM vault_items WHERE user_id = $1
-      ${search ? "AND name ILIKE $2" : ""}
-      ${type ? "AND type = $3" : ""}
-        ORDER BY created_at DESC LIMIT $4 OFFSET $5
-    `;
-
+    const conditions = ["user_id = $1"];
     const values = [userId];
-    if (search) values.push(`%${search}%`);
-    if (type) values.push(type);
-    values.push(limit, offset);
 
+    if (search) {
+      conditions.push( ` name ILIKE $${values.length + 1}`);
+      values.push(`%${search}%`);
+    }
+
+    if (type) {
+      conditions.push(` type = $${values.length + 1}`);
+      values.push(type);
+    }
+
+    const query = `
+      SELECT COUNT(*) AS total
+      FROM vault_items
+      WHERE ${conditions.join(" AND ")}`
 
     const result = await pool.query(query, values);
     return parseInt(result.rows[0].total, 10);
