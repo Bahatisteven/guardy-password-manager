@@ -9,7 +9,8 @@ const dbName = process.env.NODE_ENV === "test" ? process.env.DB_NAME_TEST : proc
 
 let jest;
 if (process.env.NODE_ENV === "test") {
-  jest = await import('jest-mock');
+  const { default: jest } = await import('jest-mock');
+  jestMock = jest;
 }
 
 
