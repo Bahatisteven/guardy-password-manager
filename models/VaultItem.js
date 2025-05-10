@@ -1,6 +1,5 @@
 import { dbPool as pool } from "../config/db.js";
 import argon2 from "argon2";
-import logger from "../utils/logger.js";
 import { debugObject } from "../utils/debugObj.js";
 import util from "util";
 

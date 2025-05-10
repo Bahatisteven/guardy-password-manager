@@ -4,9 +4,9 @@ import {
   getFilteredVaultItems,
   getTotalFilteredVaultItems,
   deleteVaultItemById
-} from ("../models/VaultItem.js");
+} from "../models/VaultItem.js";
 
-import { dbPool as  pool  } from("../config/db.js");
+import { dbPool as pool } from "../config/db.js";
 
 
 jest.mock("../config/db.js");
