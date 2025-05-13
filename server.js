@@ -7,6 +7,7 @@ import cors from "cors";
 import morgan from "morgan";
 import compression from "compression";
 import rateLimit from "./middleware/rateLimit.js";
+import { metricsMiddleware, metricsRoute } from "./middleware/metricsMiddleware.js";
 import logger from "./utils/logger.js";
 import router from "./routes/index.js";
 
@@ -34,6 +35,9 @@ app.get("/api/health", (req, res) => {
   logger.info("Health check route hit");
   res.status(200).json({ message: "Server is healthy" });
 });
+
+app.use(metricsMiddleware);
+app.get("/metrics", metricsRoute);
 
 app.use("/api", router);
 

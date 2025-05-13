@@ -18,17 +18,19 @@ const metricsMiddleware = (req, res, next) => {
   res.on("finish", () => {
     end({
       method: req.method,
-      route: req.route.path,
+      route: req.route?.path || req.url,
       status_code: res.statusCode
     });
-    next();
   });
+  next();
 };
 
 
-const metricsRoute = (req, res) => {
+const metricsRoute = async (req, res) => {
+  console.log("Metrics route hit!")
   res.set("Content-Type", client.register.contentType);
-  res.end(client.register.metrics());
+  const metrics = await client.register.metrics(); // res.end(client.register.metrics());
+  res.end(metrics);
 };
 
 export { metricsMiddleware, metricsRoute};
