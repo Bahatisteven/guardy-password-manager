@@ -1,11 +1,18 @@
 # ignore environment files 
 .env
+
 # ignore node_modules
 node_modules
+
 # ignore build files
 build
+
 # ignore log files
 *.log
+
 # ignore logs
 combined.log
 error.log
+
+# testing
+/coverage

@@ -52,7 +52,7 @@ const addVaultItem = async (req, res) => {
 
 
 
-const getAllVaultItems = async (req, res) => {
+const getUserVaultItems = async (req, res) => {
   try {
     const userId = req.user_id;
     if (!userId) {
@@ -63,6 +63,12 @@ const getAllVaultItems = async (req, res) => {
     // pagination support 
 
     const { search, type, page= 1, limit = 10 } = req.query;
+
+    if (page < 1 || limit < 1 ) {
+      logger.error("Invalid pagination paramaters.");
+      return res.status(400).json({ message: "Page and limit must be positive integers." });
+    }
+
     const offset = (page - 1) * limit;
 
     const vaultItems = await getFilteredVaultItems(userId,search,type, limit, offset);
@@ -71,7 +77,7 @@ const getAllVaultItems = async (req, res) => {
 
     if (vaultItems.length === 0) {
       logger.info(`No vault items found for user ${userId}.`);
-      return res.status(500).json({ message: "No vault items found.", vaultItems: [] });
+      return res.status(404).json({ message: "No vault items found.", vaultItems: [] });
     }
 
     logger.info(`Vault items retrieved successfully for user ${userId}.`);
@@ -119,4 +125,4 @@ const deleteVaultItem = async (req, res) => {
 };
 
 
-export { addVaultItem, getAllVaultItems, deleteVaultItem };
+export { addVaultItem, getUserVaultItems, deleteVaultItem };
