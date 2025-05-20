@@ -2,6 +2,7 @@ import { createVaultItem, getVaultItemByNameAndType, deleteVaultItemById, getFil
 import logger  from "../utils/logger.js";
 import { DB_ERRORS } from "../utils/dbErrors.js";
 
+// add vault item
 const addVaultItem = async (req, res) => {
   try {
     const userId = req.user_id;
@@ -52,6 +53,7 @@ const addVaultItem = async (req, res) => {
 
 
 
+// get user vault items
 const getUserVaultItems = async (req, res) => {
   try {
     const userId = req.user_id;
@@ -99,6 +101,7 @@ const getUserVaultItems = async (req, res) => {
 };
 
 
+// delete vault item
 const deleteVaultItem = async (req, res) => {
   try {
     const userId = req.user_id;
