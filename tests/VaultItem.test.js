@@ -22,6 +22,7 @@ describe("VaultItem Model", () => {
   });
 
 
+  // test to test the createVaultItem function
   test("createVaultItem should insert a new vault item", async () => {
     const mockResult = { rows: [{ id: 1, name: "Test Item", type: "password", data: "secretData" }] };
     pool.query.mockResolvedValue(mockResult);
@@ -34,6 +35,7 @@ describe("VaultItem Model", () => {
     );
   });
 
+  // test to test the getVaultItemsByUserId function
   test("getVaultItemsByUserId should retrieve items for user", async () => {
     const mockResult = { rows: [{ id: 1, name: "Test Item", type: "password"}] };
     pool.query.mockResolvedValue(mockResult);

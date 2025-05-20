@@ -1,6 +1,6 @@
 import express from "express";
 import rateLimiter from "../middleware/rateLimit.js";
-import { addVaultItem, getAllVaultItems } from "../controllers/vaultController.js";
+import { addVaultItem, getUserVaultItems } from "../controllers/vaultController.js";
 import { authenticateToken } from "../middleware/authMiddleware.js";
 import { validateVaultItem, validateVaultItemId } from "../validators/vaultValidator.js";
 import { deleteVaultItemById } from "../models/VaultItem.js";
@@ -13,9 +13,9 @@ const router = express.Router();
 
 router.post("/items", authenticateToken, validateVaultItem, addVaultItem);
 
-router.get("/items", authenticateToken, getAllVaultItems);
+router.get("/items", authenticateToken, getUserVaultItems);
 
-router.get("/items/:id",authenticateToken, validateVaultItemId, getAllVaultItems);
+router.get("/items/:id",authenticateToken, validateVaultItemId, getUserVaultItems);
 
 router.delete("/items/:id", authenticateToken, validateVaultItemId, deleteVaultItemById);
 
