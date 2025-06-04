@@ -2,7 +2,9 @@ import { dbPool as pool } from "../config/db.js";
 import argon2 from "argon2";
 import { debugObject } from "../utils/debugObj.js";
 import util from "util";
+import { type } from "os";
 
+// create vault item modal to interact with the database
 const createVaultItem = async (userId, name, type, data) => {
   try {
     const encryptedData = await argon2.hash(data);
@@ -19,6 +21,7 @@ const createVaultItem = async (userId, name, type, data) => {
 };
 
 
+// get vault items by user id with pagination to be interacted with the database
 const getVaultItemsByUserId = async (userId, limits, offset) => {
   try {
     const result = await pool.query(
@@ -35,7 +38,7 @@ const getVaultItemsByUserId = async (userId, limits, offset) => {
 };
 
 
-
+// get vault item by name and type to be interacted with the database
 const getVaultItemByNameAndType = async (userId, name, type) => {
   try {
     const result = await pool.query(
@@ -50,6 +53,7 @@ const getVaultItemByNameAndType = async (userId, name, type) => {
 }
 
 
+// get total vault items by user id to be interacted with the database
 const getTotalVaultItemsByUserId = async (userId) => {
   try {
     const result = await pool.query(
@@ -63,7 +67,7 @@ const getTotalVaultItemsByUserId = async (userId) => {
   }
 };
 
-
+// get filtered vault item by user 
 const getFilteredVaultItems = async (userId, search, type, limit, offset) => {
   try {
     const conditions = ["user_id = $1"];
@@ -79,6 +83,7 @@ const getFilteredVaultItems = async (userId, search, type, limit, offset) => {
       values.push(type);
     }
 
+    // query to get filtered vault items 
     const query = `
       SELECT * FROM vault_items
       WHERE ${conditions.join(" AND ")}
@@ -86,8 +91,10 @@ const getFilteredVaultItems = async (userId, search, type, limit, offset) => {
       LIMIT $${values.length +1 } OFFSET $${values.length + 2}
       `;
 
+      // add limit and offset to the values array
     values.push(limit, offset);
-      
+     
+    // execute the query
     const result = await pool.query(query, values);
     return result.rows;
   } catch (error) {
@@ -97,11 +104,14 @@ const getFilteredVaultItems = async (userId, search, type, limit, offset) => {
 };
 
 
+// get total filtered vault items by user
 const getTotalFilteredVaultItems = async (userId, search, type) => {
   try {
+    // build the conditions and values for the query
     const conditions = ["user_id = $1"];
     const values = [userId];
 
+    // check if search and type are provided and add them to the conditions 
     if (search) {
       conditions.push( ` name ILIKE $${values.length + 1}`);
       values.push(`%${search}%`);
@@ -112,6 +122,7 @@ const getTotalFilteredVaultItems = async (userId, search, type) => {
       values.push(type);
     }
 
+    // query to get total filtered vault items
     const query = `
       SELECT COUNT(*) AS total
       FROM vault_items
@@ -121,6 +132,27 @@ const getTotalFilteredVaultItems = async (userId, search, type) => {
     return parseInt(result.rows[0].total, 10);
   } catch(error) {
     console.error("Error retrieving total filtered vault items:", error.message);
+    throw error;
+  }
+};
+
+// update vault item 
+const updateVaultItem = async (userId, id, name, type, data) => {
+  try {
+    const encryptedData = await argon2.hash(data);
+
+    const result = await pool.query(
+      "UPDATE vault_items SET name = $1, type = $2, data = $3 WHERE user_id = $4 AND id = $5 RETURNING *",
+      [name, type, encryptedData, userId, id]
+    );
+
+    if (result.rows.length === 0) {
+      throw new Error("Vault item not found or not authorized.");
+    }
+
+    return result.rows[0];
+  } catch (error) {
+    console.error("Error updating vault item:", util.inspect(error, { depth: null, colors: true}));
     throw error;
   }
 };
@@ -140,4 +172,4 @@ const deleteVaultItemById = async (userId, id) => {
 };
 
 
-export { createVaultItem, getVaultItemsByUserId, getVaultItemByNameAndType, getTotalVaultItemsByUserId, deleteVaultItemById, getFilteredVaultItems, getTotalFilteredVaultItems };
+export { createVaultItem, getVaultItemsByUserId, getVaultItemByNameAndType, getTotalVaultItemsByUserId, deleteVaultItemById, getFilteredVaultItems, getTotalFilteredVaultItems, updateVaultItem };

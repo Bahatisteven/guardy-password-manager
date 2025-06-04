@@ -2,7 +2,7 @@
   "name": "password-manager",
   "version": "1.0.0",
   "description": "A secure, user-friendly password manager designed to store and manage sensitive information efficiently.",
-  "main": "index.js",
+  "main": "server.js",
   "type": "module",
   "scripts": {
     "test": "NODE_ENV=test jest --watchAll --verbose",

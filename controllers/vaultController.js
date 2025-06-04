@@ -1,4 +1,4 @@
-import { createVaultItem, getVaultItemByNameAndType, deleteVaultItemById, getFilteredVaultItems, getTotalFilteredVaultItems } from "../models/VaultItem.js";
+import { createVaultItem, getVaultItemByNameAndType, deleteVaultItemById, getFilteredVaultItems, getTotalFilteredVaultItems, updateVaultItem } from "../models/VaultItem.js";
 import logger  from "../utils/logger.js";
 import { DB_ERRORS } from "../utils/dbErrors.js";
 
@@ -101,6 +101,41 @@ const getUserVaultItems = async (req, res) => {
 };
 
 
+// update vault item 
+const updateUserVaultItem = async (req, res) => {
+  try {
+    if (!req.body) {
+      logger.error("Request body is missing.");
+      return res.status(400).json({ message: "Request body is missing." });
+    }
+
+    const userId = req.user_id;
+    const itemId = req.params.id;
+    const { name, username, password, uri, notes, favorite } = req.body;
+
+    if (!name || !username) {
+      logger.error("Missing required fields for update.");
+      return res.status(400).json({ message: "Missing required fields." });
+    }
+
+    logger.info("Updating vault item:", { userId, itemId, name, username, password, uri, notes, favorite });
+
+    // update the item in the database
+    const result = await updateVaultItem(userId, itemId, name, username, password, uri, notes, favorite);
+
+    if (!result || result.rows.length === 0) {
+      logger.warn(`Vault item not found or not authorized for user ${userId}, item ${itemId}`);
+      return res.status(404).json({ message: "Vault item not found or not authorized." });
+    }
+
+    logger.info(`Vault item ${itemId} updated successfully for user ${userId}.`);
+    res.json({ message: "Vault item updated successfully.", item: result.rows[0] });
+  } catch (error) {
+    logger.error("Error updating vault item:", error);
+    res.status(500).json({ message: "Failed to update vault item." });
+  }
+};
+
 // delete vault item
 const deleteVaultItem = async (req, res) => {
   try {
@@ -128,4 +163,4 @@ const deleteVaultItem = async (req, res) => {
 };
 
 
-export { addVaultItem, getUserVaultItems, deleteVaultItem };
+export { addVaultItem, getUserVaultItems, deleteVaultItem, updateUserVaultItem };
