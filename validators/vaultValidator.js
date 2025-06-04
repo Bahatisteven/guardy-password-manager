@@ -44,7 +44,7 @@ const validateVaultItem = (req, res, next) => {
       path: details.path.join("."),
       type: details.type,
     }));
-    logger.error("Validation error:", errorMessages);
+    console.error("Validation error:", errorMessages);
     return res.status(400).json({ message: "Validation failed.", errors: errorMessages });
   }
   next();
