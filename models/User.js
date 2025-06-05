@@ -30,10 +30,12 @@ const findUserByEmail = async (email) => {
   console.log("Finding user by email:", email);
   
   try {
+    // query from the database to find user by email
     const result = await Pool.query(
       "SELECT * FROM users WHERE email = $1",
       [email]
     );
+    // if no user is found, return null
     return result.rows[0];
   } catch (error) {
     logger.error("Error finding user by email:", error);
@@ -46,9 +48,11 @@ const findUserByEmail = async (email) => {
 
 const findUserById = async (id) => {
   try {
+    // query from the database to find user by id
     const result = await Pool.query(
       "SELECT * FROM users WHERE id = $1", [id]
     );
+    // if no user is found, return null
     return result.rows[0];
   } catch (error) {
     logger.error("Error finding user by ID:", error);
