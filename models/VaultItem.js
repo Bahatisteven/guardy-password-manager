@@ -7,12 +7,15 @@ import { type } from "os";
 // create vault item modal to interact with the database
 const createVaultItem = async (userId, name, type, data) => {
   try {
+    // hashing the data 
     const encryptedData = await argon2.hash(data);
 
+    // insert the vault item into the database
     const result = await pool.query(
       "INSERT INTO vault_items (user_id, name, type, data) VALUES ($1, $2, $3, $4) RETURNING *",
       [userId, name, type, encryptedData]
     );
+    // return null if no rows are returned
     return result.rows[0];
   } catch (error) {
     console.error("Error creating vault item:", error);
@@ -24,10 +27,12 @@ const createVaultItem = async (userId, name, type, data) => {
 // get vault items by user id with pagination to be interacted with the database
 const getVaultItemsByUserId = async (userId, limits, offset) => {
   try {
+    // check if limits and offset are provided, if not set default values
     const result = await pool.query(
       "SELECT * FROM vault_items WHERE user_id = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3",
       [userId, limits, offset]
     );
+    // if no rows are returned, return an empty array
     debugObject(result.rows);
     return result.rows;
   } catch (error) {
@@ -41,10 +46,12 @@ const getVaultItemsByUserId = async (userId, limits, offset) => {
 // get vault item by name and type to be interacted with the database
 const getVaultItemByNameAndType = async (userId, name, type) => {
   try {
+    // query to get vault item by name and type
     const result = await pool.query(
       "SELECT * FROM vault_items WHERE user_id = $1 AND name = $2 AND type = $3",
       [userId, name, type]
     );
+    // if no rows are returned, return null
     return result.rows[0];
   } catch (error) {
     console.error("Error retrieving vault item:", error.message);
@@ -56,10 +63,12 @@ const getVaultItemByNameAndType = async (userId, name, type) => {
 // get total vault items by user id to be interacted with the database
 const getTotalVaultItemsByUserId = async (userId) => {
   try {
+    // query to get total vault items by user id
     const result = await pool.query(
       "SELECT COUNT(*) AS TOTAL FROM vault_items WHERE user_id = $1",
       [userId]
     );
+    // if no rows are returned, return 0
     return parseInt(result.rows[0].count, 10);
   } catch (error) {
     console.error("Error retrieving total vault items:", error);
@@ -139,17 +148,21 @@ const getTotalFilteredVaultItems = async (userId, search, type) => {
 // update vault item 
 const updateVaultItem = async (userId, id, name, type, data) => {
   try {
+    // hash the data
     const encryptedData = await argon2.hash(data);
 
+    // update the vault item in the database
     const result = await pool.query(
       "UPDATE vault_items SET name = $1, type = $2, data = $3 WHERE user_id = $4 AND id = $5 RETURNING *",
       [name, type, encryptedData, userId, id]
     );
 
+    // if no rows are returned, throw an error
     if (result.rows.length === 0) {
       throw new Error("Vault item not found or not authorized.");
     }
 
+    // return the updated vault item
     return result.rows[0];
   } catch (error) {
     console.error("Error updating vault item:", util.inspect(error, { depth: null, colors: true}));
@@ -158,12 +171,15 @@ const updateVaultItem = async (userId, id, name, type, data) => {
 };
 
 
+// delete vault item by id
 const deleteVaultItemById = async (userId, id) => {
   try {
+    // query to delete the vault item by id
     const result = await pool.query(
       "DELETE FROM vault_items WHERE user_id = $1 AND id = $2 RETURNING *",
       [userId, id]
     );
+    // if no rows, throw error
     return result.rows[0];
   } catch (error) {
     console.error("Error deleting vault item:", util.inspect(error, { depth: null, colors: true}));
