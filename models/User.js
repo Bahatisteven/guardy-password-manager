@@ -3,7 +3,7 @@ import logger from "../utils/logger.js";
 
 
 // create a new user
-const createUser = async ( username, email, passwordHash) => {
+const createUser = async ( email, passwordHash, hint) => {
   try {
 
     // check if user alredy exists
@@ -14,8 +14,8 @@ const createUser = async ( username, email, passwordHash) => {
 
     // insert the user into the database
     const result = await Pool.query(
-      "INSERT INTO users ( username, email, password_hash ) VALUES ( $1, $2, $3 ) RETURNING *",
-      [username, email, passwordHash]
+      "INSERT INTO users ( email, hint, password_hash ) VALUES ( $1, $2, $3 ) RETURNING *",
+      [email, passwordHash, hint]
     );
     return result.rows[0];
   } catch (error) {
