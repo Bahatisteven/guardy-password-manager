@@ -8,7 +8,7 @@ import logger from "../utils/logger.js";
 
 const signUp = async (req, res) => {
   try {
-    const {username, email, password} = req.body;
+    const { email, masterPassword, hint} = req.body;
 
     const existingUser = await findUserByEmail(email);
     if (existingUser) {
@@ -19,7 +19,7 @@ const signUp = async (req, res) => {
     // hash the password
     let passwordHash;
     try {
-      passwordHash = await argon2.hash(password);
+      passwordHash = await argon2.hash(masterPassword);
       if (!passwordHash) {
         logger.error("Password hashing failed.");
         return res.status(500).json({ message: "An error occurred while processing your request." });
@@ -30,7 +30,7 @@ const signUp = async (req, res) => {
     }
     
     // create the user
-    const user = await createUser(username, email, passwordHash);
+    const user = await createUser( email,passwordHash, hint);
     logger.info(`User ${email} created successfully.`);
 
     // generate tokens
