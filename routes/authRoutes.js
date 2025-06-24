@@ -7,7 +7,7 @@ const router = express.Router();
 
 // router to handle auth routes
 
-router.post("/signup",validateSignUp, signUp);
+router.post("/signup",validateSignUp, signUp, login);
 
 router.post("/login", validateLogin, authenticateLogin, login);
 

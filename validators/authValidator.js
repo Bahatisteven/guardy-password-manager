@@ -37,7 +37,7 @@ export const validateSignUp = (req, res, next) => {
 
 const loginSchema = Joi.object({
   email: Joi.string().email().required(),
-  password: Joi.string().min(8).required(),
+  masterPassword: Joi.string().min(8).required(),
 });
 
 
