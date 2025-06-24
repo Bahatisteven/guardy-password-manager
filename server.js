@@ -23,9 +23,10 @@ app.use(helmet({
 }));
 
 app.use(cors({
-   origin: process.env.FRONTEND_URL || "*",
-   Credentials: true,
+   origin: process.env.FRONTEND_URL,
+   credentials: true,
    }));
+   console.log("frontend url:",process.env.FRONTEND_URL )
 
 app.use(morgan("combined"));
 

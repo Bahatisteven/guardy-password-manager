@@ -67,7 +67,7 @@ const refreshToken = async (req, res) => {
 
 const authenticateLogin = async (req, res, next) => {
   try {
-    const { email, password } = req.body;
+    const { email, masterPassword } = req.body;
     
     // check if user exists
     const user = await findUserByEmail(email);
@@ -77,7 +77,7 @@ const authenticateLogin = async (req, res, next) => {
     }
 
     // check if password is correct
-    const isPasswordValid = await argon2.verify(user.password_hash, password);
+    const isPasswordValid = await argon2.verify(user.password_hash, masterPassword);
 
     if (!isPasswordValid) {
       logger.error("Invalid email or password at the isPasswordValid check");
