@@ -6,6 +6,7 @@ import helmet from "helmet";
 import cors from "cors";
 import morgan from "morgan";
 import compression from "compression";
+import cookieParser from "cookie-parser";
 import rateLimit from "./middleware/rateLimit.js";
 import { metricsMiddleware, metricsRoute } from "./middleware/metricsMiddleware.js";
 import logger from "./utils/logger.js";
@@ -31,6 +32,7 @@ app.use(cors({
 app.use(morgan("combined"));
 
 app.use(compression());
+app.use(cookieParser());
 
 app.get("/api/health", (req, res) => {
   logger.info("Health check route hit");
