@@ -29,8 +29,8 @@ const refreshTokenCookieOptions = {
 
 const accessCookieOptions = {
   httpOnly: true,
-  secure: true,
-  sameSite: "strict",
+  //secure: true,
+  sameSite: "lax",
   maxAge: parseInt(process.env.COOKIE_EXPIRATION * 10) || 36000, 
 };
 

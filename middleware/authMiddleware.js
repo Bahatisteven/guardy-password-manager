@@ -12,10 +12,15 @@ import { sendEmail } from "../utils/sendEmail.js";
 // middleware to authenticate JWT token
 
 const authenticateToken = (req, res, next) => {
-  const authHeader = req.get("authorization");  //
+  // try to get token from Authorization header
+  const authHeader = req.get("authorization");
+  let token = authHeader?.split(" ")[1];
+  console.log("Cookies:", req.cookies);
 
-  // check if the token is in the format "Bearer <token>"
-  const token = authHeader?.split(" ")[1];
+  // if not present, try to get token from cookie
+  if (!token && req.cookies && req.cookies.token) {
+    token = req.cookies.token;
+  }
 
   if (!token) {
     logger.error("Access token is missing or invalid");
@@ -27,7 +32,6 @@ const authenticateToken = (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     req.user_id = decoded.id;
     next();
-
   } catch (error) {
     logger.error("Error during token authentication:", error);
     return res.status(403).json({ message: "Invalid token or expired token." });
