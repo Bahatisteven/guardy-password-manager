@@ -22,6 +22,7 @@ const authenticateToken = (req, res, next) => {
     token = req.cookies.token;
   }
 
+  console.log("Token generated: ", token);
   if (!token) {
     logger.error("Access token is missing or invalid");
     return res.status(401).json({ message: "Access token is missing or invalid." });

@@ -58,14 +58,23 @@ const signUp = async (req, res) => {
 
 const login = async (req, res) => {
   try {
-    const userId = req.user_id;
-    const user = await findUserById(userId);
+    const { email, masterPassword } = req.body;
+
+    // find user by email
+    const user = await findUserByEmail(email);
 
     if (!user) {
       logger.error("User not found during login");
-      return res.status(404).json({ message: "User not found." });
+      return res.status(404).json({ message: "Invalid email or password." });
     }
-    
+
+    // verify password
+    const isPasswordValid = await argon2.verify(user.password_hash, masterPassword);
+    if (!isPasswordValid) {
+      logger.error("Invalid password during login");
+      return res.status(401).json({ message: "Invalid email or password." });
+    }
+
     // generate tokens
     const token = generateToken({ id: user.id, email: user.email });
     const refreshToken = generateRefreshToken({ id: user.id, email: user.email });
