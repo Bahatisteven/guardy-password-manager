@@ -188,4 +188,49 @@ const deleteVaultItemById = async (userId, id) => {
 };
 
 
-export { createVaultItem, getVaultItemsByUserId, getVaultItemByNameAndType, getTotalVaultItemsByUserId, deleteVaultItemById, getFilteredVaultItems, getTotalFilteredVaultItems, updateVaultItem };
+
+const shareVault = async (userId, itemId, recipientEmail, accessLevel = "view") => {
+  try {
+    // if the recipient exists
+    const recipientRes = await pool.query(
+      "SELECT id FROM users WHERE email = $1",
+      [recipientEmail]
+    );
+    if (recipientRes.rows.length === 0) {
+      throw new Error("Recipient not found.");
+    }
+    const recipientId = recipientRes.rows[0].id;
+
+    // if the vault item exists and belongs to the user
+    const itemRes = await pool.query(
+      "SELECT id FROM vault_items WHERE id = $1 AND user_id = $2",
+      [itemId, userId]
+    );
+    if (itemRes.rows.length === 0) {
+      throw new Error("Vault item not found or not owned by user.");
+    }
+
+    // prevent duplicate sharing
+    const duplicateRes = await pool.query(
+      "SELECT id FROM shared_vault_items WHERE item_id = $1 AND recipient_id = $2",
+      [itemId, recipientId]
+    );
+    if (duplicateRes.rows.length > 0) {
+      throw new Error("This item is already shared with this user.");
+    }
+
+    // insert the shared vault item into the database
+    const result = await pool.query(
+      "INSERT INTO shared_vault_items (user_id, item_id, recipient_id, access_level) VALUES ($1, $2, $3, $4) RETURNING *",
+      [userId, itemId, recipientId, accessLevel]
+    );
+
+    return result.rows[0];
+  } catch (error) {
+    console.error("Error sharing vault item:", util.inspect(error, { depth: null, colors: true }));
+    throw error;
+  }
+};
+
+
+export { createVaultItem, getVaultItemsByUserId, getVaultItemByNameAndType, getTotalVaultItemsByUserId, deleteVaultItemById, getFilteredVaultItems, getTotalFilteredVaultItems, updateVaultItem, shareVault };
