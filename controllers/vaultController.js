@@ -1,4 +1,4 @@
-import { createVaultItem, getVaultItemByNameAndType, deleteVaultItemById, getFilteredVaultItems, getTotalFilteredVaultItems, updateVaultItem } from "../models/VaultItem.js";
+import { createVaultItem, getVaultItemByNameAndType, deleteVaultItemById, getFilteredVaultItems, getTotalFilteredVaultItems, updateVaultItem, shareVault  } from "../models/VaultItem.js";
 import logger  from "../utils/logger.js";
 import { DB_ERRORS } from "../utils/dbErrors.js";
 
@@ -162,5 +162,36 @@ const deleteVaultItem = async (req, res) => {
   }
 };
 
+// export vault controller
+const exportVault = async (req, res) => {
+  // authentiating the user 
+  const userId = req.user_id; 
+  if (!userId) {
+    logger.error("User ID is missing in the request. Ensure the user is authenticated.");
+    return res.status(401).json({ message: "Unauthorized. Please log in and try again." });
+  }
+  try {
+    const vaultItems = await getAllVaultItemsForUser(userId);
+    if (!vaultItems || vaultItems.length === 0) {
+      logger.info(`No vault items found for user ${userId}.`);
+      return res.status(404).json({ message: "No vault items found." });
+    }
 
-export { addVaultItem, getUserVaultItems, deleteVaultItem, updateUserVaultItem };
+    // convert vault items to JSON format
+    const jsonData = JSON.stringify(vaultItems, null, 2);
+
+    // set headers for file download
+    res.setHeader("Content-Disposition", `attachment; filename=vault_${userId}.json`);
+    res.setHeader("Content-Type", "application/json");
+
+    // send the JSON data as a response
+    res.status(200).send(jsonData);
+  } catch (error) {
+    logger.error("Error exporting vault items:", error.message);
+    res.status(500).json({ message: "An error occurred while exporting the vault items." });
+  }
+};
+
+
+
+export { addVaultItem, getUserVaultItems, deleteVaultItem, updateUserVaultItem, exportVault };
