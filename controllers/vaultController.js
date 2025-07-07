@@ -1,6 +1,7 @@
 import { createVaultItem, getVaultItemByNameAndType, deleteVaultItemById, getFilteredVaultItems, getTotalFilteredVaultItems, updateVaultItem, shareVault  } from "../models/VaultItem.js";
 import logger  from "../utils/logger.js";
 import { DB_ERRORS } from "../utils/dbErrors.js";
+import fs from "fs/promises"
 
 // add vault item
 const addVaultItem = async (req, res) => {
@@ -162,6 +163,7 @@ const deleteVaultItem = async (req, res) => {
   }
 };
 
+
 // export vault controller
 const exportVault = async (req, res) => {
   // authentiating the user 
@@ -193,5 +195,48 @@ const exportVault = async (req, res) => {
 };
 
 
+// share vault controller
+const shareVaultController = async (req, res) => {
+  const userId = req.user_id;
+  const { itemId, recipientEmail, accessLevel } = req.body;
+  try {
+    // sharing the vault item
+    const sharedItem = await shareVault(userId, itemId, recipientEmail, accessLevel);
+    if (!sharedItem) {
+      logger.error(`Failed to share vault item with ID ${itemId} for user ${recipientEmail}`);
+      return res.status(400).json({ message: "Failed to share vault item." });
+    }
+    res.status(200).json({ message: "Vault item shared successfully.", sharedItem });
+  } catch (error) {
+    logger.error("Error sharing vault item:", error.message);
+    res.status(400).json({ message: "An error occurred while sharing the vault item." });
+  }
+};
 
-export { addVaultItem, getUserVaultItems, deleteVaultItem, updateUserVaultItem, exportVault };
+
+
+// import vault controller
+const importVault = async (req, res) => {
+  const userId = req.user_id;
+  if (!userId) {
+    return res.status(401).json({ message: "Unauthorized. Please log in and try again." });
+  }
+  try {
+    // i assume file is uploaded as req.file 
+    const fileContent = await fs.readFile(req.file.path, "utf-8");
+    const items = JSON.parse(fileContent);
+
+    // insert each item 
+    for (const item of items) {
+      // await to create vault item
+      await createVaultItem(userId, item.name, item.type, item.data);
+    }
+    await fs.unlink(req.file.path); // clean up uploaded file
+    res.status(200).json({ message: "Vault imported successfully." });
+  } catch (error) {
+    res.status(500).json({ message: "An error occurred while importing the vault items." });
+  }
+};
+
+
+export { addVaultItem, getUserVaultItems, deleteVaultItem, updateUserVaultItem, exportVault, importVault, shareVaultController };
