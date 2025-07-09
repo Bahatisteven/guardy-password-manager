@@ -38,11 +38,6 @@ app.get("/api/health", (req, res) => {
   res.status(200).json({ message: "Server is healthy" });
 });
 
-app.get("/test-cookie", (req, res) => {
-  res.cookie("test", "hello", { httpOnly: true, sameSite: "lax" });
-  res.send("Cookie set");
-});
-
 app.use(metricsMiddleware);
 app.get("/metrics", metricsRoute);
 
