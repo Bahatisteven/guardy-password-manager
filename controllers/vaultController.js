@@ -239,4 +239,23 @@ const importVault = async (req, res) => {
 };
 
 
-export { addVaultItem, getUserVaultItems, deleteVaultItem, updateUserVaultItem, exportVault, importVault, shareVaultController };
+// update privacy settings
+const updatePrivacySetting = async (req, res) => {
+  try {
+    const userId = req.user_id;
+    const { privacySetting } = req.body;  
+    const result = await updatePrivacy(userId, privacySetting);
+    if (!result) {
+      logger.error(`Failed to update privacy setting for user ${userId}.`);
+      return res.status(500).json({ message: "Failed to update privacy setting." });
+    }
+    logger.info(`Privacy setting updated successfully for user ${userId}.`);
+    res.status(200).json({ message: "Privacy setting updated successfully." });
+  } catch (error) {
+    logger.error("Error updating privacy setting:", error.message);
+    res.status(500).json({ message: "An error occurred while updating the privacy setting." });
+  }
+};
+
+
+export { addVaultItem, getUserVaultItems, deleteVaultItem, updateUserVaultItem, exportVault, importVault, shareVaultController, updatePrivacySetting };

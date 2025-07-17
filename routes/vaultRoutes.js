@@ -1,6 +1,6 @@
 import express from "express";
 import rateLimiter from "../middleware/rateLimit.js";
-import { addVaultItem, getUserVaultItems, updateUserVaultItem, exportVault, importVault, shareVaultController } from "../controllers/vaultController.js";
+import { addVaultItem, getUserVaultItems, updateUserVaultItem, exportVault, importVault, shareVaultController, updatePrivacySetting } from "../controllers/vaultController.js";
 import { authenticateToken } from "../middleware/authMiddleware.js";
 import { validateVaultItem, validateVaultItemId } from "../validators/vaultValidator.js";
 import { deleteVaultItemById, shareVault } from "../models/VaultItem.js";
@@ -28,6 +28,8 @@ router.post("/import", authenticateToken, upload.single('file'), importVault);
 router.post("/share", authenticateToken, shareVaultController);
 
 router.delete("/items/:id", authenticateToken, validateVaultItemId, deleteVaultItemById);
+
+router.put("/user/privacy", authenticateToken, validateVaultItemId, updatePrivacySetting);
 
 
 router.post("/test", rateLimiter, (req, res) => {
