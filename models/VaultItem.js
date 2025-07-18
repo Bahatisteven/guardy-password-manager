@@ -233,4 +233,66 @@ const shareVault = async (userId, itemId, recipientEmail, accessLevel = "view") 
 };
 
 
-export { createVaultItem, getVaultItemsByUserId, getVaultItemByNameAndType, getTotalVaultItemsByUserId, deleteVaultItemById, getFilteredVaultItems, getTotalFilteredVaultItems, updateVaultItem, shareVault };
+/**
+ * Updates notification preferences for the given user ID.
+ * @param {String|Number} userId - ID of the user in the DB
+ * @param {Object} prefs - notification preferences to update
+ * @returns {Object|null} updated user row, or null on failure
+ */
+const updateNotificationPrefs = async (userId, prefs) => {
+  try {
+    // build the query dynamically based on provided preferences
+    const columns = [];
+    const values = [];
+    let idx = 1;
+
+    if (prefs.emailNotifications !== undefined) {
+      columns.push(`email_notifications = $${idx++}`);
+      values.push(prefs.emailNotifications);
+    }
+    if (prefs.securityAlerts !== undefined) {
+      columns.push(`security_alerts = $${idx++}`);
+      values.push(prefs.securityAlerts);
+    }
+    if (prefs.weeklyReports !== undefined) {
+      columns.push(`weekly_reports = $${idx++}`);
+      values.push(prefs.weeklyReports);
+    }
+    if (prefs.marketingEmails !== undefined) {
+      columns.push(`marketing_emails = $${idx++}`);
+      values.push(prefs.marketingEmails);
+    }
+    if (prefs.breachAlerts !== undefined) {
+      columns.push(`breach_alerts = $${idx++}`);
+      values.push(prefs.breachAlerts);
+    }
+
+    if (columns.length === 0) {
+      // nothing to update
+      return null;
+    }
+
+    // add userId to the end of the values array
+    values.push(userId);
+
+   // query to update user notification preferences
+    const query = `
+      UPDATE users
+      SET ${columns.join(', ')}
+      WHERE id = $${idx}
+      RETURNING *;
+    `;
+
+    const result = await Pool.query(query, values);
+    if (result.rows.length === 0) {
+      return null;
+    }
+    return result.rows[0];
+  } catch (error) {
+    logger.error("Error updating notification preferences:", error);
+    return null;
+  }
+};
+
+
+export { createVaultItem, getVaultItemsByUserId, getVaultItemByNameAndType, getTotalVaultItemsByUserId, deleteVaultItemById, getFilteredVaultItems, getTotalFilteredVaultItems, updateVaultItem, shareVault, updateNotificationPrefs };
