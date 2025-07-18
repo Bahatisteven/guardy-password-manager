@@ -1,6 +1,6 @@
 import express from "express";
 import rateLimiter from "../middleware/rateLimit.js";
-import { addVaultItem, getUserVaultItems, updateUserVaultItem, exportVault, importVault, shareVaultController, updatePrivacySetting } from "../controllers/vaultController.js";
+import { addVaultItem, getUserVaultItems, updateUserVaultItem, exportVault, importVault, shareVaultController, updatePrivacySetting, updateNotificationPreferences } from "../controllers/vaultController.js";
 import { authenticateToken } from "../middleware/authMiddleware.js";
 import { validateVaultItem, validateVaultItemId } from "../validators/vaultValidator.js";
 import { deleteVaultItemById, shareVault } from "../models/VaultItem.js";
@@ -31,6 +31,7 @@ router.delete("/items/:id", authenticateToken, validateVaultItemId, deleteVaultI
 
 router.put("/user/privacy", authenticateToken, validateVaultItemId, updatePrivacySetting);
 
+router.put("/user/notification", authenticateToken, validateVaultItemId, updateNotificationPreferences);
 
 router.post("/test", rateLimiter, (req, res) => {
   res.send("Test route");
