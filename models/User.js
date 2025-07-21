@@ -61,4 +61,44 @@ const findUserById = async (id) => {
 } 
 
 
+// update user profile
+export const updateUserProfile = async (userId, updates) => {
+  try {
+    const fields = [];
+    const values = [];
+    let queryIndex = 1;
+
+    for (const key in updates) {
+      fields.push(`${key} = $${queryIndex++}`);
+      values.push(updates[key]);
+    }
+
+    if (fields.length === 0) {
+      return null; // no fields to update
+    }
+
+    // add userId to values array for the WHERE clause
+    values.push(userId);
+
+    const query = `
+      UPDATE users
+      SET ${fields.join(', ')}, updated_at = NOW()
+      WHERE id = $${queryIndex}
+      RETURNING id, firstName, lastName, email; -- Return relevant updated fields
+    `;
+
+    const result = await pool.query(query, values);
+
+    if (result.rows.length > 0) {
+      return result.rows[0];
+    }
+    return null; // user not found or no rows updated
+  } catch (error) {
+    logger.error("Error updating user profile:", error);
+    throw error;
+  }
+};
+
+
+
 export { createUser, findUserByEmail, findUserById };
