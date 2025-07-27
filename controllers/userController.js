@@ -50,7 +50,6 @@ const updateUserProfileController = async (req, res) => {
 
 
 
-
 const JWT_SECRET = process.env.JWT_SECRET;
 
 const authenticateMiddleware = (req, res, next) => {
@@ -94,4 +93,61 @@ const authenticateMiddleware = (req, res, next) => {
 };
 
 
-export { updateUserProfileController, authenticateMiddleware };
+
+// update privacy settings
+const updatePrivacySetting = async (req, res) => {
+  try {
+    const userId = req.user_id;
+    const { privacySetting } = req.body;  
+    const result = await updatePrivacy(userId, privacySetting);
+    if (!result) {
+      logger.error(`Failed to update privacy setting for user ${userId}.`);
+      return res.status(500).json({ message: "Failed to update privacy setting." });
+    }
+    logger.info(`Privacy setting updated successfully for user ${userId}.`);
+    res.status(200).json({ message: "Privacy setting updated successfully." });
+  } catch (error) {
+    logger.error("Error updating privacy setting:", error.message);
+    res.status(500).json({ message: "An error occurred while updating the privacy setting." });
+  }
+};
+
+
+// update notification preferences 
+const updateNotificationPreferences = async (req, res) => {
+  try {
+    const userId = req.user_id;
+    const {
+      emailNotifications,
+      securityAlerts,
+      weeklyReports,
+      marketingEmails,
+      breachAlerts
+    } = req.body;
+
+    // only update allowed fields
+    const notificationPrefs = {
+      ...(emailNotifications !== undefined && { emailNotifications }),
+      ...(securityAlerts !== undefined && { securityAlerts }),
+      ...(weeklyReports !== undefined && { weeklyReports }),
+      ...(marketingEmails !== undefined && { marketingEmails }),
+      ...(breachAlerts !== undefined && { breachAlerts }),
+    };
+
+    const result = await updateNotificationPrefs(userId, notificationPrefs);
+
+    if (!result) {
+      logger.error(`Failed to update notification preferences for user ${userId}.`);
+      return res.status(500).json({ message: "Failed to update notification preferences." });
+    }
+
+    logger.info(`Notification preferences updated successfully for user ${userId}.`);
+    res.status(200).json({ message: "Notification preferences updated successfully." });
+  } catch (error) {
+    logger.error("Error updating notification preferences:", error.message);
+    res.status(500).json({ message: "An error occurred while updating notification preferences." });
+  }
+};
+
+
+export { updateUserProfileController, authenticateMiddleware, updateNotificationPreferences, updatePrivacySetting };

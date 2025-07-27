@@ -1,9 +1,13 @@
 import express from "express";
-import { updateUserProfileController, authenticateMiddleware } from "../controllers/userController.js";
-
+import { updateUserProfileController, authenticateMiddleware, updateNotificationPreferences, updatePrivacySetting } from "../controllers/userController.js";
+import { validateVaultItemId } from "../validators/vaultValidator.js";
+import { authenticateToken } from "../middleware/authMiddleware.js";
 const router = express.Router();
 
-// apply authentication middleware to protect this route
-router.put("/api/user/profile", authenticateMiddleware, updateUserProfileController);
+router.put("/profile", authenticateMiddleware, updateUserProfileController);
+
+router.put("/privacy", authenticateToken, validateVaultItemId, updatePrivacySetting);
+
+router.put("/notification", authenticateToken, validateVaultItemId, updateNotificationPreferences);
 
 export default router;
