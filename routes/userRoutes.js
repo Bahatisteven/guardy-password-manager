@@ -8,6 +8,6 @@ router.put("/profile", authenticateMiddleware, updateUserProfileController);
 
 router.put("/privacy", authenticateToken, validateVaultItemId, updatePrivacySetting);
 
-router.put("/notification", authenticateToken, validateVaultItemId, updateNotificationPreferences);
+router.put("/notification", authenticateToken, updateNotificationPreferences);
 
 export default router;

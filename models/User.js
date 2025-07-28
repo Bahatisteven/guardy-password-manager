@@ -3,7 +3,7 @@ import logger from "../utils/logger.js";
 
 
 // create a new user
-const createUser = async ( email, passwordHash, hint) => {
+export const createUser = async ( email, passwordHash, hint) => {
   try {
 
     // check if user alredy exists
@@ -26,7 +26,7 @@ const createUser = async ( email, passwordHash, hint) => {
 
 
 // find user by email
-const findUserByEmail = async (email) => {
+export const findUserByEmail = async (email) => {
   console.log("Finding user by email:", email);
   
   try {
@@ -46,7 +46,7 @@ const findUserByEmail = async (email) => {
 
 // find user by id 
 
-const findUserById = async (id) => {
+export const findUserById = async (id) => {
   try {
     // query from the database to find user by id
     const result = await Pool.query(
@@ -87,7 +87,7 @@ export const updateUserProfile = async (userId, updates) => {
       RETURNING id, firstName, lastName, email; -- Return relevant updated fields
     `;
 
-    const result = await pool.query(query, values);
+    const result = await Pool.query(query, values);
 
     if (result.rows.length > 0) {
       return result.rows[0];
@@ -99,6 +99,87 @@ export const updateUserProfile = async (userId, updates) => {
   }
 };
 
+// update privacy setting for a user
+export const updatePrivacy = async (userId, privacySetting) => {
+  try {
+    const query = `
+      UPDATE users
+      SET privacy_setting = $1, updated_at = NOW()
+      WHERE id = $2
+      RETURNING id, privacy_setting;
+    `;
 
+    const values = [privacySetting, userId];
+    const result = await Pool.query(query, values);
 
-export { createUser, findUserByEmail, findUserById };
+    if (result.rows.length > 0) {
+      return result.rows[0];
+    }
+
+    return null; // no user found or no rows affected
+  } catch (error) {
+    logger.error("Error updating privacy setting:", error);
+    throw error;
+  }
+};
+
+/**
+ * Updates notification preferences for the given user ID.
+ * @param {String|Number} userId - ID of the user in the DB
+ * @param {Object} prefs - notification preferences to update
+ * @returns {Object|null} updated user row, or null on failure
+ */
+export const updateNotificationPrefs = async (userId, prefs) => {
+  try {
+    // build the query dynamically based on provided preferences
+    const columns = [];
+    const values = [];
+    let idx = 1;
+
+    if (prefs.emailNotifications !== undefined) {
+      columns.push(`email_notifications = $${idx++}`);
+      values.push(prefs.emailNotifications);
+    }
+    if (prefs.securityAlerts !== undefined) {
+      columns.push(`security_alerts = $${idx++}`);
+      values.push(prefs.securityAlerts);
+    }
+    if (prefs.weeklyReports !== undefined) {
+      columns.push(`weekly_reports = $${idx++}`);
+      values.push(prefs.weeklyReports);
+    }
+    if (prefs.marketingEmails !== undefined) {
+      columns.push(`marketing_emails = $${idx++}`);
+      values.push(prefs.marketingEmails);
+    }
+    if (prefs.breachAlerts !== undefined) {
+      columns.push(`breach_alerts = $${idx++}`);
+      values.push(prefs.breachAlerts);
+    }
+
+    if (columns.length === 0) {
+      // nothing to update
+      return null;
+    }
+
+    // add userId to the end of the values array
+    values.push(userId);
+
+   // query to update user notification preferences
+    const query = `
+      UPDATE users
+      SET ${columns.join(', ')}
+      WHERE id = $${idx}
+      RETURNING *;
+    `;
+
+    const result = await Pool.query(query, values);
+    if (result.rows.length === 0) {
+      return null;
+    }
+    return result.rows[0];
+  } catch (error) {
+    logger.error("Error updating notification preferences:", error);
+    return null;
+  }
+};
