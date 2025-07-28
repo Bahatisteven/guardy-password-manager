@@ -33,6 +33,18 @@ const validateVaultItemIdSchema = Joi.object({
     }),
 });
 
+const typeMap = {
+  "any.required": "required",
+  "number.base": "number",
+  "number.integer": "integer",
+  "number.positive": "positive",
+  "string.base": "string",
+  "string.max": "maxLength",
+  "any.only": "enum"
+};
+
+const formatErrorType = (type) => typeMap[type] || type; 
+
 
 // validate vault item middleware
 const validateVaultItem = (req, res, next) => {
@@ -42,7 +54,7 @@ const validateVaultItem = (req, res, next) => {
     const errorMessages = error.details.map((details) => ({
       message: details.message,
       path: details.path.join("."),
-      type: details.type,
+      type: formatErrorType(details.type),
     }));
     console.error("Validation error:", errorMessages);
     return res.status(400).json({ message: "Validation failed.", errors: errorMessages });
@@ -59,9 +71,9 @@ const validateVaultItemId = (req, res, next) => {
    const errorMessages = error.details.map((details) => ({
       message: details.message,
       path: details.path.join("."),
-      type: details.type
+      type: formatErrorType(details.type),
    }));
-   return res.status(400).json({ message: errorMessages });
+   return res.status(400).json({ message: "Validation failed.", errors: errorMessages });
   }
   next();
 };

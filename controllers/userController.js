@@ -1,4 +1,4 @@
-import { updateUserProfile } from "../models/User.js";  
+import { updateUserProfile, updatePrivacy, updateNotificationPrefs } from "../models/User.js";  
 import logger from "../utils/logger.js";
 import jwt from 'jsonwebtoken';
 
@@ -10,7 +10,7 @@ const updateUserProfileController = async (req, res) => {
       return res.status(401).json({ message: "Unauthorized. Please log in and try again." });
     }
 
-    const { firstName, lastName, email /* add other fields as needed */ } = req.body;
+    const { firstName, lastName, email } = req.body;
 
     // check if at least one update field is provided
     if (!firstName && !lastName && !email) {
@@ -99,7 +99,7 @@ const updatePrivacySetting = async (req, res) => {
   try {
     const userId = req.user_id;
     const { privacySetting } = req.body;  
-    const result = await updatePrivacy(userId, privacySetting);
+    const result = await updatePrivacy (userId, privacySetting);
     if (!result) {
       logger.error(`Failed to update privacy setting for user ${userId}.`);
       return res.status(500).json({ message: "Failed to update privacy setting." });
