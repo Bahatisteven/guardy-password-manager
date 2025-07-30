@@ -124,7 +124,7 @@ export const updatePrivacy = async (userId, privacySetting) => {
 };
 
 /**
- * Updates notification preferences for the given user ID.
+ * updates notification preferences for the given user ID.
  * @param {String|Number} userId - ID of the user in the DB
  * @param {Object} prefs - notification preferences to update
  * @returns {Object|null} updated user row, or null on failure
