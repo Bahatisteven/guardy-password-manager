@@ -1,7 +1,7 @@
 import express from "express";
 import rateLimiter from "../middleware/rateLimit.js";
 import { addVaultItem, getUserVaultItems, updateUserVaultItem, exportVault, importVault, shareVaultController } from "../controllers/vaultController.js";
-import { authenticateToken } from "../middleware/authMiddleware.js";
+import { authenticate } from "../middleware/authMiddleware.js";
 import { validateVaultItem, validateVaultItemId } from "../validators/vaultValidator.js";
 import { deleteVaultItemById, shareVault } from "../models/VaultItem.js";
 import multer from "multer";
@@ -13,21 +13,21 @@ const upload = multer({ dest: 'uploads/' }); // configure multer to save files i
 
 // router to handle vault item routes
 
-router.post("/items", authenticateToken, validateVaultItem, addVaultItem);
+router.post("/items", authenticate, validateVaultItem, addVaultItem);
 
-router.get("/items", authenticateToken, getUserVaultItems);
+router.get("/items", authenticate, getUserVaultItems);
 
-router.get("/items/:id",authenticateToken, validateVaultItemId, getUserVaultItems);
+router.get("/items/:id",authenticate, validateVaultItemId, getUserVaultItems);
 
-router.put("/items/:id", authenticateToken, validateVaultItemId, validateVaultItem, updateUserVaultItem);
+router.put("/items/:id", authenticate, validateVaultItemId, validateVaultItem, updateUserVaultItem);
 
-router.get("/export", authenticateToken, exportVault);
+router.get("/export", authenticate, exportVault);
 
-router.post("/import", authenticateToken, upload.single('file'), importVault);
+router.post("/import", authenticate, upload.single('file'), importVault);
 
-router.post("/share", authenticateToken, shareVaultController);
+router.post("/share", authenticate, shareVaultController);
 
-router.delete("/items/:id", authenticateToken, validateVaultItemId, deleteVaultItemById);
+router.delete("/items/:id", authenticate, validateVaultItemId, deleteVaultItemById);
 
 router.post("/test", rateLimiter, (req, res) => {
   res.send("Test route");

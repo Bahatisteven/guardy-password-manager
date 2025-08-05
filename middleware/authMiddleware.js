@@ -11,33 +11,46 @@ import { sendEmail } from "../utils/sendEmail.js";
 
 // middleware to authenticate JWT token
 
-const authenticateToken = (req, res, next) => {
-  // try to get token from Authorization header
-  const authHeader = req.get("authorization");
-  let token = authHeader?.split(" ")[1];
-  console.log("Cookies:", req.cookies);
+import jwt from "jsonwebtoken";
+import logger from "../utils/logger.js";
+import { findUserById } from "../models/User.js";
 
-  // if not present, try to get token from cookie
-  if (!token && req.cookies && req.cookies.token) {
-    token = req.cookies.token;
-  }
-
-  console.log("Token generated: ", token);
-  if (!token) {
-    logger.error("Access token is missing or invalid");
-    return res.status(401).json({ message: "Access token is missing or invalid." });
-  }
-
-  // verify the token
+export const authenticate = async (req, res, next) => {
   try {
+    let token;
+    const authHeader = req.get("authorization");
+    if (authHeader?.startsWith("Bearer ")) {
+      token = authHeader.split(" ")[1];
+    } else if (req.cookies?.token) {
+      token = req.cookies.token;
+    }
+
+    if (!token) {
+      return res.status(401).json({ message: "Authentication required: token missing." });
+    }
+
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user_id = decoded.id;
+    const user = await findUserById(decoded.id);
+    if (!user) {
+      return res.status(401).json({ message: "User not found." });
+    }
+
+    req.user = {
+      id: user.id,
+      email: user.email,
+      name: user.first_name || user.name || "", // adapt field names
+    };
+
     next();
-  } catch (error) {
-    logger.error("Error during token authentication:", error);
-    return res.status(403).json({ message: "Invalid token or expired token." });
+  } catch (err) {
+    logger.warn("Authentication failed:", err.message);
+    if (err.name === "TokenExpiredError") {
+      return res.status(401).json({ message: "Token expired." });
+    }
+    return res.status(401).json({ message: "Invalid token." });
   }
 };
+
 
 
 // middleware to refresh the access token
