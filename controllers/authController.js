@@ -8,48 +8,25 @@ import logger from "../utils/logger.js";
 
 const signUp = async (req, res) => {
   try {
-    const { email, masterPassword, hint} = req.body;
+    const { email, masterPassword, hint } = req.body;
 
-    const existingUser = await findUserByEmail(email);
-    if (existingUser) {
-      logger.info(`User with email ${email} already exists.`);
-      return res.status(400).json({message: "A user with this email already exists."});
-    }
+    const existing = await findUserByEmail(email);
+    if (existing) return res.status(400).json({ message: "User with this email already exists." });
 
-    // hash the password
-    let passwordHash;
-    try {
-      passwordHash = await argon2.hash(masterPassword);
-      if (!passwordHash) {
-        logger.error("Password hashing failed.");
-        return res.status(500).json({ message: "An error occurred while processing your request." });
-      }
-    } catch (error) {
-      logger.error("Error hashing password:", error);
-      return res.status(500).json({ message: "An error occurred while processing your request." });
-    }
-    
-    // create the user
-    const user = await createUser( email,passwordHash, hint);
-    logger.info(`User ${email} created successfully.`);
+    const passwordHash = await argon2.hash(masterPassword);
+    const user = await createUser(email, passwordHash, hint, { firstName, lastName }); // adapt to your createUser signature
 
-    // generate tokens
-    const token = generateToken({ id: user.id, email: user.email });
-    const refreshToken = generateRefreshToken({id: user.id, email: user.email});
-    logger.info(`Tokens generated for user ${email}`);
+    const token = generateToken({ id: user.id, email: user.email, name: user.first_name || user.name });
+    const refreshToken = generateRefreshToken({ id: user.id, email: user.email });
 
-    // set the tokens in cookies
     res.cookie("token", token, accessCookieOptions);
     res.cookie("refreshToken", refreshToken, refreshTokenCookieOptions);
 
-    // send the response excluding the password
     const { password_hash, ...safeUser } = user;
-    logger.info(`User ${email} signed up successfully.`);
     res.status(201).json({ user: safeUser });
-
-  } catch (error) {
-    logger.error("Error during signup:", error);
-    res.status(500).json({message: "An error occurred during signup."})
+  } catch (err) {
+    logger.error("Signup error:", err);
+    res.status(500).json({ message: "Signup failed." });
   }
 };
 
