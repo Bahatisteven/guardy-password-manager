@@ -33,43 +33,41 @@ const signUp = async (req, res) => {
 
 // login function to authenticate the user and generate tokens
 
+/**
+ * login function to authenticate the user and generate tokens
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @returns {Promise<void>}
+ */
 const login = async (req, res) => {
   try {
+    // get email and masterPassword from request body
     const { email, masterPassword } = req.body;
-
+    
     // find user by email
     const user = await findUserByEmail(email);
+    if (!user) return res.status(401).json({ message: "Invalid email or password." });
 
-    if (!user) {
-      logger.error("User not found during login");
-      return res.status(404).json({ message: "Invalid email or password." });
-    }
+    // verify the password
+    const isValid = await argon2.verify(user.password_hash, masterPassword);
+    if (!isValid) return res.status(401).json({ message: "Invalid email or password." });
 
-    // verify password
-    const isPasswordValid = await argon2.verify(user.password_hash, masterPassword);
-    if (!isPasswordValid) {
-      logger.error("Invalid password during login");
-      return res.status(401).json({ message: "Invalid email or password." });
-    }
-
-    // generate tokens
+    // generate token and refreshToken
     const token = generateToken({ id: user.id, email: user.email });
     const refreshToken = generateRefreshToken({ id: user.id, email: user.email });
 
-    // set the tokens in cookies 
+    // set cookies
     res.cookie("token", token, accessCookieOptions);
     res.cookie("refreshToken", refreshToken, refreshTokenCookieOptions);
 
+    // return user info without password hash
     const { password_hash, ...safeUser } = user;
-
-    logger.info(`User ${user.email} logged in successfully.`);
     res.status(200).json({ user: safeUser });
-  } catch(error) {
-    logger.error("Error during login:", error);
-    res.status(500).json({ message: "An error occurred during login." });
+  } catch (err) {
+    logger.error("Login error:", err);
+    res.status(500).json({ message: "Login failed." });
   }
 };
-
 
 // logout function to clear cookies and invalidate the session
 
