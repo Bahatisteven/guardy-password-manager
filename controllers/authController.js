@@ -69,33 +69,41 @@ const login = async (req, res) => {
   }
 };
 
-// logout function to clear cookies and invalidate the session
 
+// logout function to clear cookies and invalidate the session
 const logout = async (req, res) => {
   try {
-
-    const userId = req.user_id;
-
-    const user = await findUserById(userId);
-
-    if (!user) {
-      logger.error("User not found during logout");
-      return res.status(404).json({ message: "User not found."});
-    }
-
-    // clear cookies
+    // clear access and refresh token cookies
     res.clearCookie("token");
     res.clearCookie("refreshToken");
 
-    logger.info("User logged out successfully.");
+    // return success message
     res.status(200).json({ message: "Logged out successfully." });
-
-  } catch (error) {
-    logger.error("Error during logout:", error);
-    res.status(500).json({ message: "An error occurred during logout." });
+  } catch (err) {
+    // log any errors
+    logger.error("Logout error:", err);
+    // return error message
+    res.status(500).json({ message: "Logout failed." });
   }
 };
 
 
 
-export { signUp, login, logout };
+/**
+ * me function to return authenticated user's information
+ * requires authenticate middleware to have run
+ */
+const me = async (req, res) => {
+  // retrieve user from request object
+  const user = req.user;
+
+  // check if user is authenticated
+  if (!user) {
+    return res.status(401).json({ message: "Not authenticated." });
+  }
+
+  // return user information
+  res.status(200).json({ user });
+};
+
+export { signUp, login, logout, me };
