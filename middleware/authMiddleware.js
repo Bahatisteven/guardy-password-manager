@@ -11,11 +11,7 @@ import { sendEmail } from "../utils/sendEmail.js";
 
 // middleware to authenticate JWT token
 
-import jwt from "jsonwebtoken";
-import logger from "../utils/logger.js";
-import { findUserById } from "../models/User.js";
-
-export const authenticate = async (req, res, next) => {
+ const authenticate = async (req, res, next) => {
   try {
     let token;
     const authHeader = req.get("authorization");
@@ -151,4 +147,4 @@ const sendVerificationEmail = async (req, res) => {
   }
 };
 
-export { authenticateToken, refreshToken, authenticateLogin, sendVerificationEmail };
+export { authenticate, refreshToken, authenticateLogin, sendVerificationEmail };

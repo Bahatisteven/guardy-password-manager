@@ -150,4 +150,21 @@ const updateNotificationPreferences = async (req, res) => {
 };
 
 
-export { updateUserProfileController, authenticateMiddleware, updateNotificationPreferences, updatePrivacySetting };
+/**
+ * me function to return authenticated user's information
+ * requires authenticate middleware to have run
+ */
+const me = async (req, res) => {
+  // retrieve user from request object
+  const user = req.user;
+
+  // check if user is authenticated
+  if (!user) {
+    return res.status(401).json({ message: "Not authenticated." });
+  }
+
+  // return user information
+  res.status(200).json({ user });
+};
+
+export { updateUserProfileController, authenticateMiddleware, updateNotificationPreferences, updatePrivacySetting, me };

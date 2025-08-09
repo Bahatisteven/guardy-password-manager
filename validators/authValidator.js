@@ -1,5 +1,4 @@
 import Joi from "joi";
-import logger from "../utils/logger.js";
 
 const signUpSchema = Joi.object({
   email: Joi.string().email().required().messages({
@@ -22,30 +21,20 @@ const signUpSchema = Joi.object({
 });
 
 
-export const validateSignUp = (req, res, next) => {
-  const { error } = signUpSchema.validate(req.body, { abortEarly: false });
-
-  if (error) {
-    const messages = error.details.map(detail => detail.message);// return all error msg as an array
-    logger.warn(`Validation error: ${messages.join(', ')}`);
-    return res.status(400).json({ errors: messages  }); 
-  }
-
-  next();
-};
-
-
 const loginSchema = Joi.object({
   email: Joi.string().email().required(),
   masterPassword: Joi.string().min(8).required(),
 });
 
 
-export const validateLogin = (req, res, next) => {
-  const { error } = loginSchema.validate(req.body);
+export const validate = (schema) => (req, res, next) => {
+  const { error } = schema.validate(req.body, { abortEarly: false });
   if (error) {
-    logger.info(`Validation on login error: ${error.details[0].message}`);
-    return res.status(400).json({ message: error.details[0].message });
+    const messages = error.details.map(d => d.message);
+    return res.status(400).json({ errors: messages });
   }
   next();
 };
+
+export const validateSignUp = validate(signUpSchema);
+export const validateLogin = validate(loginSchema);
