@@ -3,18 +3,13 @@ dotenv.config();
 
 import jwt from "jsonwebtoken";
 import * as argon2 from "argon2";
-import { findUserByEmail } from "../models/User.js";
+import { findUserByEmail, findUserById } from "../models/User.js";
 import { generateToken, accessCookieOptions } from "../utils/jwt.js";
 import logger from "../utils/logger.js";
 import { sendEmail } from "../utils/sendEmail.js";
 
 
 // middleware to authenticate JWT token
-
-import jwt from "jsonwebtoken";
-import logger from "../utils/logger.js";
-import { findUserById } from "../models/User.js";
-
 export const authenticate = async (req, res, next) => {
   try {
     let token;
@@ -48,6 +43,46 @@ export const authenticate = async (req, res, next) => {
       return res.status(401).json({ message: "Token expired." });
     }
     return res.status(401).json({ message: "Invalid token." });
+  }
+};
+
+export const authenticateMiddleware = (req, res, next) => {
+  // get token from header
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    logger.warn('Authentication failed: No token provided or malformed token header.');
+    return res.status(401).json({ message: 'Authentication required: No token provided.' });
+  }
+
+  const token = authHeader.split(' ')[1]; // extract the token part
+
+  if (!token) {
+    logger.warn('Authentication failed: Token is missing after Bearer.');
+    return res.status(401).json({ message: 'Authentication required: Token is missing.' });
+  }
+
+  try {
+    // verify the token
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    // attach user information to the request object
+    req.user_id = decoded.userId;
+
+    logger.info(`User ${req.user_id} authenticated successfully.`);
+    next(); 
+
+  } catch (error) {
+    if (error.name === 'TokenExpiredError') {
+      logger.warn('Authentication failed: Token expired.', error.message);
+      return res.status(401).json({ message: 'Authentication failed: Token expired.' });
+    }
+    if (error.name === 'JsonWebTokenError') {
+      logger.warn('Authentication failed: Invalid token.', error.message);
+      return res.status(401).json({ message: 'Authentication failed: Invalid token.' });
+    }
+    logger.error('Authentication error:', error.message);
+    return res.status(500).json({ message: 'Internal server error during authentication.' });
   }
 };
 
@@ -151,4 +186,4 @@ const sendVerificationEmail = async (req, res) => {
   }
 };
 
-export { authenticateToken, refreshToken, authenticateLogin, sendVerificationEmail };
+export { refreshToken, authenticateLogin, sendVerificationEmail };

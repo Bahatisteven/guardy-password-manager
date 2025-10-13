@@ -1,14 +1,47 @@
 import { dbPool as pool } from "../config/db.js";
-import argon2 from "argon2";
+import crypto from "crypto";
 import { debugObject } from "../utils/debugObj.js";
 import util from "util";
 import { type } from "os";
 
+const ALGORITHM = "aes-256-gcm";
+const IV_LENGTH = 16;
+const SALT_LENGTH = 64;
+const TAG_LENGTH = 16;
+const KEY_LENGTH = 32;
+const SCRYPT_PARAMS = { N: 32768, r: 8, p: 1 };
+
+const getKey = (salt) => {
+  return crypto.scryptSync(process.env.ENCRYPTION_KEY, salt, KEY_LENGTH, SCRYPT_PARAMS);
+};
+
+const encrypt = (text) => {
+  const salt = crypto.randomBytes(SALT_LENGTH);
+  const key = getKey(salt);
+  const iv = crypto.randomBytes(IV_LENGTH);
+  const cipher = crypto.createCipheriv(ALGORITHM, key, iv);
+  const encrypted = Buffer.concat([cipher.update(text, "utf8"), cipher.final()]);
+  const tag = cipher.getAuthTag();
+  return Buffer.concat([salt, iv, tag, encrypted]).toString("hex");
+};
+
+const decrypt = (encrypted) => {
+  const data = Buffer.from(encrypted, "hex");
+  const salt = data.slice(0, SALT_LENGTH);
+  const iv = data.slice(SALT_LENGTH, SALT_LENGTH + IV_LENGTH);
+  const tag = data.slice(SALT_LENGTH + IV_LENGTH, SALT_LENGTH + IV_LENGTH + TAG_LENGTH);
+  const encryptedText = data.slice(SALT_LENGTH + IV_LENGTH + TAG_LENGTH);
+  const key = getKey(salt);
+  const decipher = crypto.createDecipheriv(ALGORITHM, key, iv);
+  decipher.setAuthTag(tag);
+  return decipher.update(encryptedText, "hex", "utf8") + decipher.final("utf8");
+};
+
 // create vault item modal to interact with the database
 export const createVaultItem = async (userId, name, type, data) => {
   try {
-    // hashing the data 
-    const encryptedData = await argon2.hash(data);
+    // encrypt the data
+    const encryptedData = encrypt(data);
 
     // insert the vault item into the database
     const result = await pool.query(
@@ -33,6 +66,9 @@ export const getVaultItemsByUserId = async (userId, limits, offset) => {
       [userId, limits, offset]
     );
     // if no rows are returned, return an empty array
+    result.rows.forEach((row) => {
+      row.data = decrypt(row.data);
+    });
     debugObject(result.rows);
     return result.rows;
   } catch (error) {
@@ -52,6 +88,9 @@ export const getVaultItemByNameAndType = async (userId, name, type) => {
       [userId, name, type]
     );
     // if no rows are returned, return null
+    if (result.rows[0]) {
+      result.rows[0].data = decrypt(result.rows[0].data);
+    }
     return result.rows[0];
   } catch (error) {
     console.error("Error retrieving vault item:", error.message);
@@ -76,7 +115,7 @@ export const getTotalVaultItemsByUserId = async (userId) => {
   }
 };
 
-// get filtered vault item by user 
+// get filtered vault item by user
 export const getFilteredVaultItems = async (userId, search, type, limit, offset) => {
   try {
     const conditions = ["user_id = $1"];
@@ -92,7 +131,7 @@ export const getFilteredVaultItems = async (userId, search, type, limit, offset)
       values.push(type);
     }
 
-    // query to get filtered vault items 
+    // query to get filtered vault items
     const query = `
       SELECT * FROM vault_items
       WHERE ${conditions.join(" AND ")}
@@ -102,9 +141,12 @@ export const getFilteredVaultItems = async (userId, search, type, limit, offset)
 
       // add limit and offset to the values array
     values.push(limit, offset);
-     
+
     // execute the query
     const result = await pool.query(query, values);
+    result.rows.forEach((row) => {
+      row.data = decrypt(row.data);
+    });
     return result.rows;
   } catch (error) {
     console.error("Error retrieving filtered vault items:", error.message);
@@ -120,7 +162,7 @@ export const getTotalFilteredVaultItems = async (userId, search, type) => {
     const conditions = ["user_id = $1"];
     const values = [userId];
 
-    // check if search and type are provided and add them to the conditions 
+    // check if search and type are provided and add them to the conditions
     if (search) {
       conditions.push( ` name ILIKE $${values.length + 1}`);
       values.push(`%${search}%`);
@@ -145,11 +187,11 @@ export const getTotalFilteredVaultItems = async (userId, search, type) => {
   }
 };
 
-// update vault item 
+// update vault item
 export const updateVaultItem = async (userId, id, name, type, data) => {
   try {
-    // hash the data
-    const encryptedData = await argon2.hash(data);
+    // encrypt the data
+    const encryptedData = encrypt(data);
 
     // update the vault item in the database
     const result = await pool.query(
@@ -163,6 +205,7 @@ export const updateVaultItem = async (userId, id, name, type, data) => {
     }
 
     // return the updated vault item
+    result.rows[0].data = decrypt(result.rows[0].data);
     return result.rows[0];
   } catch (error) {
     console.error("Error updating vault item:", util.inspect(error, { depth: null, colors: true}));
