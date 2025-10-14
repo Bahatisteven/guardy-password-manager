@@ -64,13 +64,16 @@ export const findUserById = async (id) => {
 // update user profile
 export const updateUserProfile = async (userId, updates) => {
   try {
+    const validColumns = ['firstName', 'lastName', 'email', 'hint']; // another valid columns here
     const fields = [];
     const values = [];
     let queryIndex = 1;
 
     for (const key in updates) {
-      fields.push(`${key} = $${queryIndex++}`);
-      values.push(updates[key]);
+      if (validColumns.includes(key)) {
+        fields.push(`${key} = $${queryIndex++}`);
+        values.push(updates[key]);
+      }
     }
 
     if (fields.length === 0) {
@@ -131,30 +134,23 @@ export const updatePrivacy = async (userId, privacySetting) => {
  */
 export const updateNotificationPrefs = async (userId, prefs) => {
   try {
-    // build the query dynamically based on provided preferences
+    const validColumns = {
+      emailNotifications: 'email_notifications',
+      securityAlerts: 'security_alerts',
+      weeklyReports: 'weekly_reports',
+      marketingEmails: 'marketing_emails',
+      breachAlerts: 'breach_alerts'
+    };
+
     const columns = [];
     const values = [];
     let idx = 1;
 
-    if (prefs.emailNotifications !== undefined) {
-      columns.push(`email_notifications = $${idx++}`);
-      values.push(prefs.emailNotifications);
-    }
-    if (prefs.securityAlerts !== undefined) {
-      columns.push(`security_alerts = $${idx++}`);
-      values.push(prefs.securityAlerts);
-    }
-    if (prefs.weeklyReports !== undefined) {
-      columns.push(`weekly_reports = $${idx++}`);
-      values.push(prefs.weeklyReports);
-    }
-    if (prefs.marketingEmails !== undefined) {
-      columns.push(`marketing_emails = $${idx++}`);
-      values.push(prefs.marketingEmails);
-    }
-    if (prefs.breachAlerts !== undefined) {
-      columns.push(`breach_alerts = $${idx++}`);
-      values.push(prefs.breachAlerts);
+    for (const key in prefs) {
+      if (validColumns[key] && prefs[key] !== undefined) {
+        columns.push(`${validColumns[key]} = $${idx++}`);
+        values.push(prefs[key]);
+      }
     }
 
     if (columns.length === 0) {

@@ -21,12 +21,14 @@ export const authenticate = async (req, res, next) => {
     }
 
     if (!token) {
+      logger.warn('Authentication failed: No token provided.');
       return res.status(401).json({ message: "Authentication required: token missing." });
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const user = await findUserById(decoded.id);
     if (!user) {
+      logger.warn(`Authentication failed: User with id ${decoded.id} not found.`);
       return res.status(401).json({ message: "User not found." });
     }
 
@@ -36,53 +38,18 @@ export const authenticate = async (req, res, next) => {
       name: user.first_name || user.name || "", // adapt field names
     };
 
+    logger.info(`User ${req.user.id} authenticated successfully.`);
     next();
   } catch (err) {
     logger.warn("Authentication failed:", err.message);
     if (err.name === "TokenExpiredError") {
       return res.status(401).json({ message: "Token expired." });
     }
-    return res.status(401).json({ message: "Invalid token." });
-  }
-};
-
-export const authenticateMiddleware = (req, res, next) => {
-  // get token from header
-  const authHeader = req.headers.authorization;
-
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    logger.warn('Authentication failed: No token provided or malformed token header.');
-    return res.status(401).json({ message: 'Authentication required: No token provided.' });
-  }
-
-  const token = authHeader.split(' ')[1]; // extract the token part
-
-  if (!token) {
-    logger.warn('Authentication failed: Token is missing after Bearer.');
-    return res.status(401).json({ message: 'Authentication required: Token is missing.' });
-  }
-
-  try {
-    // verify the token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-    // attach user information to the request object
-    req.user_id = decoded.userId;
-
-    logger.info(`User ${req.user_id} authenticated successfully.`);
-    next(); 
-
-  } catch (error) {
-    if (error.name === 'TokenExpiredError') {
-      logger.warn('Authentication failed: Token expired.', error.message);
-      return res.status(401).json({ message: 'Authentication failed: Token expired.' });
-    }
-    if (error.name === 'JsonWebTokenError') {
-      logger.warn('Authentication failed: Invalid token.', error.message);
+    if (err.name === 'JsonWebTokenError') {
       return res.status(401).json({ message: 'Authentication failed: Invalid token.' });
     }
-    logger.error('Authentication error:', error.message);
-    return res.status(500).json({ message: 'Internal server error during authentication.' });
+    logger.error('Authentication error:', err.message);
+    return res.status(500).json({ message: "Invalid token." });
   }
 };
 
