@@ -1,52 +1,27 @@
+import CryptoJS from "crypto-js";
 import { dbPool as pool } from "../config/db.js";
-import crypto from "crypto";
 import { debugObject } from "../utils/debugObj.js";
 import util from "util";
-import { type } from "os";
-
-const ALGORITHM = "aes-256-gcm";
-const IV_LENGTH = 16;
-const SALT_LENGTH = 64;
-const TAG_LENGTH = 16;
-const KEY_LENGTH = 32;
-const SCRYPT_PARAMS = { N: 32768, r: 8, p: 1 };
-
-const getKey = (salt) => {
-  return crypto.scryptSync(process.env.ENCRYPTION_KEY, salt, KEY_LENGTH, SCRYPT_PARAMS);
-};
 
 const encrypt = (text) => {
-  const salt = crypto.randomBytes(SALT_LENGTH);
-  const key = getKey(salt);
-  const iv = crypto.randomBytes(IV_LENGTH);
-  const cipher = crypto.createCipheriv(ALGORITHM, key, iv);
-  const encrypted = Buffer.concat([cipher.update(text, "utf8"), cipher.final()]);
-  const tag = cipher.getAuthTag();
-  return Buffer.concat([salt, iv, tag, encrypted]).toString("hex");
+  return CryptoJS.AES.encrypt(text, process.env.ENCRYPTION_KEY).toString();
 };
 
-const decrypt = (encrypted) => {
-  const data = Buffer.from(encrypted, "hex");
-  const salt = data.slice(0, SALT_LENGTH);
-  const iv = data.slice(SALT_LENGTH, SALT_LENGTH + IV_LENGTH);
-  const tag = data.slice(SALT_LENGTH + IV_LENGTH, SALT_LENGTH + IV_LENGTH + TAG_LENGTH);
-  const encryptedText = data.slice(SALT_LENGTH + IV_LENGTH + TAG_LENGTH);
-  const key = getKey(salt);
-  const decipher = crypto.createDecipheriv(ALGORITHM, key, iv);
-  decipher.setAuthTag(tag);
-  return decipher.update(encryptedText, "hex", "utf8") + decipher.final("utf8");
+const decrypt = (encryptedText) => {
+  const bytes = CryptoJS.AES.decrypt(encryptedText, process.env.ENCRYPTION_KEY);
+  return bytes.toString(CryptoJS.enc.Utf8);
 };
 
 // create vault item modal to interact with the database
-export const createVaultItem = async (userId, name, type, data) => {
+export const createVaultItem = async (userId, name, type, password, data) => {
   try {
-    // encrypt the data
-    const encryptedData = encrypt(data);
+    // encrypt the password
+    const encryptedPassword = encrypt(password);
 
     // insert the vault item into the database
     const result = await pool.query(
-      "INSERT INTO vault_items (user_id, name, type, data) VALUES ($1, $2, $3, $4) RETURNING *",
-      [userId, name, type, encryptedData]
+      "INSERT INTO vault_items (user_id, name, type, password, data) VALUES ($1, $2, $3, $4, $5) RETURNING *",
+      [userId, name, type, encryptedPassword, data]
     );
     // return null if no rows are returned
     return result.rows[0];
@@ -65,9 +40,8 @@ export const getVaultItemsByUserId = async (userId, limits, offset) => {
       "SELECT * FROM vault_items WHERE user_id = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3",
       [userId, limits, offset]
     );
-    // if no rows are returned, return an empty array
     result.rows.forEach((row) => {
-      row.data = decrypt(row.data);
+      row.password = decrypt(row.password);
     });
     debugObject(result.rows);
     return result.rows;
@@ -89,7 +63,7 @@ export const getVaultItemByNameAndType = async (userId, name, type) => {
     );
     // if no rows are returned, return null
     if (result.rows[0]) {
-      result.rows[0].data = decrypt(result.rows[0].data);
+      result.rows[0].password = decrypt(result.rows[0].password);
     }
     return result.rows[0];
   } catch (error) {
@@ -145,7 +119,7 @@ export const getFilteredVaultItems = async (userId, search, type, limit, offset)
     // execute the query
     const result = await pool.query(query, values);
     result.rows.forEach((row) => {
-      row.data = decrypt(row.data);
+      row.password = decrypt(row.password);
     });
     return result.rows;
   } catch (error) {
@@ -188,15 +162,15 @@ export const getTotalFilteredVaultItems = async (userId, search, type) => {
 };
 
 // update vault item
-export const updateVaultItem = async (userId, id, name, type, data) => {
+export const updateVaultItem = async (userId, id, name, type, password, data) => {
   try {
-    // encrypt the data
-    const encryptedData = encrypt(data);
+    // encrypt the password
+    const encryptedPassword = encrypt(password);
 
     // update the vault item in the database
     const result = await pool.query(
-      "UPDATE vault_items SET name = $1, type = $2, data = $3 WHERE user_id = $4 AND id = $5 RETURNING *",
-      [name, type, encryptedData, userId, id]
+      "UPDATE vault_items SET name = $1, type = $2, password = $3, data = $4 WHERE user_id = $5 AND id = $6 RETURNING *",
+      [name, type, encryptedPassword, data, userId, id]
     );
 
     // if no rows are returned, throw an error
@@ -205,7 +179,7 @@ export const updateVaultItem = async (userId, id, name, type, data) => {
     }
 
     // return the updated vault item
-    result.rows[0].data = decrypt(result.rows[0].data);
+    result.rows[0].password = decrypt(result.rows[0].password);
     return result.rows[0];
   } catch (error) {
     console.error("Error updating vault item:", util.inspect(error, { depth: null, colors: true}));

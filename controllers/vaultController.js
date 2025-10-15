@@ -13,7 +13,7 @@ const addVaultItem = async (req, res) => {
       return res.status(400).json({ message: "User ID is missing. Please log in and try again." });
     }
 
-    const { name, type, data } = req.body;
+    const { name, type, password, data } = req.body;
   
     // check if the vault item alredy exists
     
@@ -26,7 +26,7 @@ const addVaultItem = async (req, res) => {
     
     // create the vault item
 
-    const vaultItem = await createVaultItem (userId, name, type, data);    
+    const vaultItem = await createVaultItem (userId, name, type, password, data);    
     if (!vaultItem) {
       logger.error(`Failed to create vault item for user ${userId}.`);
       return res.status(500).json({ message: "Failed to create vault item." });
@@ -112,17 +112,17 @@ const updateUserVaultItem = async (req, res) => {
 
     const userId = req.user_id;
     const itemId = req.params.id;
-    const { name, username, password, uri, notes, favorite } = req.body;
+    const { name, type, password, ...data } = req.body;
 
-    if (!name || !username) {
+    if (!name) {
       logger.error("Missing required fields for update.");
       return res.status(400).json({ message: "Missing required fields." });
     }
 
-    logger.info("Updating vault item:", { userId, itemId, name, username, password, uri, notes, favorite });
+    logger.info("Updating vault item:", { userId, itemId, name, type, password, data });
 
     // update the item in the database
-    const result = await updateVaultItem(userId, itemId, name, username, password, uri, notes, favorite);
+    const result = await updateVaultItem(userId, itemId, name, type, password, data);
 
     if (!result || result.rows.length === 0) {
       logger.warn(`Vault item not found or not authorized for user ${userId}, item ${itemId}`);
@@ -229,7 +229,7 @@ const importVault = async (req, res) => {
     // insert each item 
     for (const item of items) {
       // await to create vault item
-      await createVaultItem(userId, item.name, item.type, item.data);
+      await createVaultItem(userId, item.name, item.type, item.password, item.data);
     }
     await fs.unlink(req.file.path); // clean up uploaded file
     res.status(200).json({ message: "Vault imported successfully." });
