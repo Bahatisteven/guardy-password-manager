@@ -64,19 +64,24 @@ export const findUserById = async (id) => {
 // update user profile
 export const updateUserProfile = async (userId, updates) => {
   try {
-    const validColumns = ['firstName', 'lastName', 'email', 'hint']; // another valid columns here
-    const fields = [];
+    const validColumns = {
+      firstName: 'first_name',
+      lastName: 'last_name',
+      email: 'email',
+      hint: 'hint'
+    };
+    const setClauses = [];
     const values = [];
     let queryIndex = 1;
 
     for (const key in updates) {
-      if (validColumns.includes(key)) {
-        fields.push(`${key} = $${queryIndex++}`);
+      if (validColumns[key]) {
+        setClauses.push(`${validColumns[key]} = $${queryIndex++}`);
         values.push(updates[key]);
       }
     }
 
-    if (fields.length === 0) {
+    if (setClauses.length === 0) {
       return null; // no fields to update
     }
 
@@ -85,9 +90,9 @@ export const updateUserProfile = async (userId, updates) => {
 
     const query = `
       UPDATE users
-      SET ${fields.join(', ')}, updated_at = NOW()
+      SET ${setClauses.join(', ')}, updated_at = NOW()
       WHERE id = $${queryIndex}
-      RETURNING id, firstName, lastName, email; -- Return relevant updated fields
+      RETURNING id, first_name AS "firstName", last_name AS "lastName", email; -- Return relevant updated fields
     `;
 
     const result = await Pool.query(query, values);
@@ -142,18 +147,18 @@ export const updateNotificationPrefs = async (userId, prefs) => {
       breachAlerts: 'breach_alerts'
     };
 
-    const columns = [];
+    const setClauses = [];
     const values = [];
-    let idx = 1;
+    let queryIndex = 1;
 
     for (const key in prefs) {
       if (validColumns[key] && prefs[key] !== undefined) {
-        columns.push(`${validColumns[key]} = $${idx++}`);
+        setClauses.push(`${validColumns[key]} = $${queryIndex++}`);
         values.push(prefs[key]);
       }
     }
 
-    if (columns.length === 0) {
+    if (setClauses.length === 0) {
       // nothing to update
       return null;
     }
@@ -164,8 +169,8 @@ export const updateNotificationPrefs = async (userId, prefs) => {
    // query to update user notification preferences
     const query = `
       UPDATE users
-      SET ${columns.join(', ')}
-      WHERE id = $${idx}
+      SET ${setClauses.join(', ')}
+      WHERE id = $${queryIndex}
       RETURNING *;
     `;
 

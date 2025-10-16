@@ -2,7 +2,6 @@ import Joi from "joi";
 import logger from "../utils/logger.js";
 
 const strongPasswordPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/;
-
 const signUpSchema = Joi.object({
   email: Joi.string().email().required().messages({
     "string.empty": "Email is required",

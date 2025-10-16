@@ -7,7 +7,7 @@ import cors from "cors";
 import morgan from "morgan";
 import compression from "compression";
 import cookieParser from "cookie-parser";
-import rateLimit from "./middleware/rateLimit.js";
+import { apiLimiter } from "./middleware/rateLimit.js";
 import { metricsMiddleware, metricsRoute } from "./middleware/metricsMiddleware.js";
 import logger from "./utils/logger.js";
 import router from "./routes/index.js";
@@ -41,9 +41,7 @@ app.get("/api/health", (req, res) => {
 app.use(metricsMiddleware);
 app.get("/metrics", metricsRoute);
 
-app.use("/api", router);
-
-app.use("/api", rateLimit);
+app.use("/api", apiLimiter, router);
 
 app.use((req, res) => {
   res.status(404).json({ message: "Route not found" });

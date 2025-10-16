@@ -1,6 +1,5 @@
 import CryptoJS from "crypto-js";
 import { dbPool as pool } from "../config/db.js";
-import { debugObject } from "../utils/debugObj.js";
 import util from "util";
 
 const encrypt = (text) => {
@@ -43,10 +42,8 @@ export const getVaultItemsByUserId = async (userId, limits, offset) => {
     result.rows.forEach((row) => {
       row.password = decrypt(row.password);
     });
-    debugObject(result.rows);
     return result.rows;
   } catch (error) {
-    debugObject(error);
     console.error("Error retrieving vault items:", { error: error.message});
     throw error;
   }
