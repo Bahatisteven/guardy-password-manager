@@ -42,14 +42,7 @@ export const authenticate = async (req, res, next) => {
     next();
   } catch (err) {
     logger.warn("Authentication failed:", err.message);
-    if (err.name === "TokenExpiredError") {
-      return res.status(401).json({ message: "Token expired." });
-    }
-    if (err.name === 'JsonWebTokenError') {
-      return res.status(401).json({ message: 'Authentication failed: Invalid token.' });
-    }
-    logger.error('Authentication error:', err.message);
-    return res.status(500).json({ message: "Invalid token." });
+    next(err);
   }
 };
 
@@ -132,18 +125,12 @@ const sendVerificationEmail = async (req, res) => {
     const verificationUrl = `${process.env.FRONTEND_URL }/verify?token=${token}`;
 
     // send verification email
-    const emailContent = await sendEmail({
+    await sendEmail({
       to: email,
       subject: "Verify Your Email Address.",
       text: `Please verify your email address by clicking the link below:\n\n${verificationUrl}\n\n If you did not sign up for ${process.env.APP_NAME}, please ignore this email.\n\n This is an automated message, Please do not reply.\n\n Thanks!`,
       html: `<p>Please verify your email address by clicking the link below:</p><a href="${verificationUrl}">${verificationUrl}</a>`,
     });
-    
-    // check if email sent
-    const emailSent = await sendEmail({ emailContent });
-    if (!emailSent) {
-      return res.status(500).json({ message: "Failed to send verification email." });
-    }
 
     logger.info(`Verification email sent to ${email}`);
     res.status(200).json({ message: "Verification email sent successfully." });

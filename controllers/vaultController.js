@@ -13,28 +13,20 @@ const addVaultItem = async (req, res, next) => {
     }
 
     const { name, type, password, data } = req.body;
-  
-    // check if the vault item alredy exists
-    
-    const existingVaultItem = await getVaultItemByNameAndType(userId, name, type);
-    if (existingVaultItem) {
-      return res.status(409).json({ message: "Vault item already exists."});
-    }
-    
-    // create the vault item
 
-    const vaultItem = await createVaultItem (userId, name, type, password, data);    
+    const vaultItem = await createVaultItem(userId, name, type, password, data);
     if (!vaultItem) {
       return res.status(500).json({ message: "Failed to create vault item." });
-    } 
+    }
 
-    // remove sensitive data from the response
-    
     const { data: encryptedData, ...safeVaultItem } = vaultItem;
     logger.info(`Vault item created successfully for user ${userId}.`);
     return res.status(201).json({ message: "Vault item created successfully.", vaultItem: safeVaultItem });
 
   } catch (error) {
+    if (error.code === '23505') { // Handle unique constraint violation
+      return res.status(409).json({ message: "Vault item already exists." });
+    }
     next(error);
   }
 };
@@ -48,8 +40,6 @@ const getUserVaultItems = async (req, res, next) => {
     if (!userId) {
       throw new Error("Unauthorized. Please log in and try again.");
     }
-
-    // pagination support 
 
     const { search, type, page= 1, limit = 10 } = req.query;
 
@@ -102,11 +92,10 @@ const updateUserVaultItem = async (req, res, next) => {
 
     logger.info("Updating vault item:", { userId, itemId, name, type, password, data });
 
-    // update the item in the database
     const result = await updateVaultItem(userId, itemId, name, type, password, data);
 
     if (!result || result.rows.length === 0) {
-      throw new Error("Vault item not found or not authorized.");
+      return res.status(404).json({ message: "Vault item not found or not authorized." });
     }
 
     logger.info(`Vault item ${itemId} updated successfully for user ${userId}.`);
@@ -142,10 +131,9 @@ const deleteVaultItem = async (req, res, next) => {
 
 // export vault controller
 const exportVault = async (req, res, next) => {
-  // authentiating the user 
   const userId = req.user_id; 
   if (!userId) {
-    throw new Error("Unauthorized. Please log in and try again.");
+    return res.status(401).json({ message: "Unauthorized. Please log in and try again." });
   }
   try {
     const vaultItems = await getAllVaultItemsForUser(userId);
@@ -153,14 +141,11 @@ const exportVault = async (req, res, next) => {
       return res.status(404).json({ message: "No vault items found." });
     }
 
-    // convert vault items to JSON format
     const jsonData = JSON.stringify(vaultItems, null, 2);
 
-    // set headers for file download
     res.setHeader("Content-Disposition", `attachment; filename=vault_${userId}.json`);
     res.setHeader("Content-Type", "application/json");
 
-    // send the JSON data as a response
     res.status(200).send(jsonData);
   } catch (error) {
     next(error);
@@ -173,7 +158,6 @@ const shareVaultController = async (req, res, next) => {
   try {
     const userId = req.user_id;
     const { itemId, recipientEmail, accessLevel } = req.body;
-    // sharing the vault item
     const sharedItem = await shareVault(userId, itemId, recipientEmail, accessLevel);
     if (!sharedItem) {
       return res.status(400).json({ message: "Failed to share vault item." });
@@ -193,17 +177,22 @@ const importVault = async (req, res, next) => {
     if (!userId) {
       throw new Error("Unauthorized. Please log in and try again.");
     }
-    // i assume file is uploaded as req.file 
     const fileContent = await fs.readFile(req.file.path, "utf-8");
     const items = JSON.parse(fileContent);
 
-    // insert each item 
+    const importResults = { success: [], failed: [] };
+
     for (const item of items) {
-      // await to create vault item
-      await createVaultItem(userId, item.name, item.type, item.password, item.data);
+      try {
+        await createVaultItem(userId, item.name, item.type, item.password, item.data);
+        importResults.success.push(item.name);
+      } catch (itemError) {
+        logger.error(`Failed to import vault item '${item.name}':`, itemError);
+        importResults.failed.push({ name: item.name, error: itemError.message });
+      }
     }
     await fs.unlink(req.file.path); // clean up uploaded file
-    res.status(200).json({ message: "Vault imported successfully." });
+    res.status(200).json({ message: "Vault import process completed.", results: importResults });
   } catch (error) {
     next(error);
   }

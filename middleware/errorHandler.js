@@ -8,6 +8,14 @@ const errorHandler = (err, req, res, next) => {
     return res.status(400).json({ message: "Validation failed", errors: err.errors });
   }
 
+  if (err.name === "JsonWebTokenError") {
+    return res.status(401).json({ message: "Invalid token." });
+  }
+
+  if (err.name === "TokenExpiredError") {
+    return res.status(401).json({ message: "Token expired." });
+  }
+
   if (err.code === DB_ERRORS.VAULT_ALREADY_EXISTS) {
     return res.status(409).json({ message: "Vault item already exists." });
   }

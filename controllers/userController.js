@@ -39,9 +39,8 @@ const updateUserProfileController = async (req, res) => {
 
   } catch (error) {
     if (error.code === "23505" && error.detail && error.detail.includes("email")) {
-      // postgreSQL unique violation error code for duplicate email
-      logger.error("Email already in use:", error.detail);
-      return res.status(409).json({ message: "Email is already in use." });
+      logger.warn(`Attempted to update with duplicate email: ${req.body.email}`);
+      return res.status(409).json({ message: "The email address provided is already in use by another account." });
     }
     logger.error("Error updating user profile:", error);
     return res.status(500).json({ message: "An error occurred while updating the user profile." });
@@ -51,7 +50,7 @@ const updateUserProfileController = async (req, res) => {
 
 
 // update privacy settings
-const updatePrivacySetting = async (req, res) => {
+const updatePrivacySetting = async (req, res, next) => {
   try {
     const userId = req.user_id;
     const { privacySetting } = req.body;  
@@ -64,13 +63,13 @@ const updatePrivacySetting = async (req, res) => {
     res.status(200).json({ message: "Privacy setting updated successfully." });
   } catch (error) {
     logger.error("Error updating privacy setting:", error.message);
-    res.status(500).json({ message: "An error occurred while updating the privacy setting." });
+    next(error);
   }
 };
 
 
 // update notification preferences 
-const updateNotificationPreferences = async (req, res) => {
+const updateNotificationPreferences = async (req, res, next) => {
   try {
     const userId = req.user_id;
     const {
@@ -81,7 +80,6 @@ const updateNotificationPreferences = async (req, res) => {
       breachAlerts
     } = req.body;
 
-    // only update allowed fields
     const notificationPrefs = {
       ...(emailNotifications !== undefined && { emailNotifications }),
       ...(securityAlerts !== undefined && { securityAlerts }),
@@ -101,7 +99,7 @@ const updateNotificationPreferences = async (req, res) => {
     res.status(200).json({ message: "Notification preferences updated successfully." });
   } catch (error) {
     logger.error("Error updating notification preferences:", error.message);
-    res.status(500).json({ message: "An error occurred while updating notification preferences." });
+    next(error);
   }
 };
 

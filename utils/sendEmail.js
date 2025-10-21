@@ -18,17 +18,18 @@ const sendEmail = async ({ to, subject, text, html }) => {
     });
 
     const info = await transporter.sendMail({
-      from: `"process.env.APP_NAME" <${process.env.SMTP_FROM}>`,
+      from: `"${process.env.APP_NAME}" <${process.env.SMTP_FROM}>`,
       to,
       subject,
       text,
-      html,
+html,
     });
+
     logger.info(`Email sent: ${info.messageId}`);
-    return info.accepted.length > 0;
+    return info;
   } catch (error) {
     logger.error("Error sending email:", error);
-    return false;
+    throw new Error("Failed to send email.");
   }
 };
 
