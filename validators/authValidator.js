@@ -38,7 +38,11 @@ const loginSchema = Joi.object({
     }),
 });
 
-// Reusable validation middleware
+/**
+ * Reusable validation middleware factory.
+ * @param {Joi.Schema} schema - The Joi schema to validate against.
+ * @returns {Function} An Express middleware function.
+ */
 const validate = (schema) => (req, res, next) => {
   const { error } = schema.validate(req.body, { abortEarly: false, stripUnknown: true });
   if (error) {
@@ -49,5 +53,17 @@ const validate = (schema) => (req, res, next) => {
   next();
 };
 
+/**
+ * Middleware to validate user sign-up data.
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ * @param {Function} next - Express next middleware function.
+ */
 export const validateSignUp = validate(signUpSchema);
+/**
+ * Middleware to validate user login data.
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ * @param {Function} next - Express next middleware function.
+ */
 export const validateLogin = validate(loginSchema);

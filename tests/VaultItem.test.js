@@ -27,7 +27,7 @@ describe("VaultItem Model", () => {
     const mockResult = { rows: [{ id: 1, name: "Test Item", type: "password", data: "secretData" }] };
     pool.query.mockResolvedValue(mockResult);
 
-    const result = await createVaultItem(1, "Test Item", "password", "secretData" );
+    const result = await createVaultItem(1, "Test Item", "password", "secretPassword", "secretData" );
     expect(result).toEqual(mockResult.rows[0]);
     expect(pool.query).toHaveBeenCalledWith(
       "INSERT INTO vault_items (user_id, name, type, data) VALUES ($1, $2, $3, $4) RETURNING *",

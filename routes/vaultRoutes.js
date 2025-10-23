@@ -1,6 +1,6 @@
 import express from "express";
 import rateLimiter from "../middleware/rateLimit.js";
-import { addVaultItem, getUserVaultItems, updateUserVaultItem, exportVault, importVault, shareVaultController, deleteVaultItem } from "../controllers/vaultController.js";
+import { addVaultItem, getUserVaultItems, updateUserVaultItem, exportVault, importVault, shareVaultController, deleteVaultItem, getVaultItemById } from "../controllers/vaultController.js";
 import { authenticate } from "../middleware/authMiddleware.js";
 import { validateVaultItem, validateVaultItemId } from "../validators/vaultValidator.js";
 import multer from "multer";
@@ -16,7 +16,7 @@ router.post("/items", authenticate, validateVaultItem, addVaultItem);
 
 router.get("/items", authenticate, getUserVaultItems);
 
-router.get("/items/:id",authenticate, validateVaultItemId, getUserVaultItems);
+router.get("/items/:id",authenticate, validateVaultItemId, getVaultItemById);
 
 router.put("/items/:id", authenticate, validateVaultItemId, validateVaultItem, updateUserVaultItem);
 

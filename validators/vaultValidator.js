@@ -4,18 +4,21 @@ import Joi from "joi";
 // validate vault item schema
 
 const validateVaultItemSchema = Joi.object({
-  name: Joi.string().optional().default("Unnamed Item"),
+  name: Joi.string().required().messages({
+    "string.empty": "Name is required",
+  }),
   type: Joi.string()
     .valid("password", "note", "card")
     .required()
-    .optional().messages({
+    .messages({
       "any.only": "Type must be one of the following: password, note, card",
       "any.required": "Type is required"
     }),
-  data: Joi.string(),
-  description: Joi.string().max(500).optional().messages({
+  data: Joi.string().optional().allow('', null),
+  description: Joi.string().max(500).optional().allow('', null).messages({
     "string.max": "Description must be at most 500 characters long",
   }),
+  password: Joi.string().optional().allow('', null), // Add password validation if needed
 });
 
 // validate vault item id schema
@@ -46,7 +49,12 @@ const typeMap = {
 const formatErrorType = (type) => typeMap[type] || type; 
 
 
-// validate vault item middleware
+/**
+ * Middleware to validate vault item data.
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ * @param {Function} next - Express next middleware function.
+ */
 const validateVaultItem = (req, res, next) => {
   const { error } = validateVaultItemSchema.validate(req.body, { abortEarly: false});
 
@@ -56,14 +64,19 @@ const validateVaultItem = (req, res, next) => {
       path: details.path.join("."),
       type: formatErrorType(details.type),
     }));
-    console.error("Validation error:", errorMessages);
+    logger.error("Validation error:", errorMessages);
     return res.status(400).json({ message: "Validation failed.", errors: errorMessages });
   }
   next();
 };
 
 
-// validate vault item id middleware
+/**
+ * Middleware to validate vault item ID from request parameters.
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ * @param {Function} next - Express next middleware function.
+ */
 const validateVaultItemId = (req, res, next) => {
   const { error } = validateVaultItemIdSchema.validate(req.params, { abortEarly: false });
 

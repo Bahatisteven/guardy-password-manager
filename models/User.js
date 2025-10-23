@@ -2,8 +2,15 @@ import { dbPool as Pool } from "../config/db.js";
 import logger from "../utils/logger.js";
 
 
-// create a new user
-export const createUser = async ( email, passwordHash, hint) => {
+/**
+ * Creates a new user in the database.
+ * @param {string} email - The user's email address.
+ * @param {string} passwordHash - The hashed master password.
+ * @param {string} hint - A hint for the master password.
+ * @returns {Promise<Object>} The newly created user object.
+ * @throws {Error} If a user with the email already exists or other database error occurs.
+ */
+export const createUser = async ( email, passwordHash, hint, firstName, lastName) => {
   try {
 
     // check if user alredy exists
@@ -14,8 +21,8 @@ export const createUser = async ( email, passwordHash, hint) => {
 
     // insert the user into the database
     const result = await Pool.query(
-      "INSERT INTO users ( email, password_hash, hint) VALUES ( $1, $2, $3 ) RETURNING *",
-      [email, passwordHash, hint]
+      "INSERT INTO users ( email, password_hash, hint, first_name, last_name) VALUES ( $1, $2, $3, $4, $5 ) RETURNING *",
+      [email, passwordHash, hint, firstName, lastName]
     );
     return result.rows[0];
   } catch (error) {
@@ -25,9 +32,14 @@ export const createUser = async ( email, passwordHash, hint) => {
 };
 
 
-// find user by email
+/**
+ * Finds a user by their email address.
+ * @param {string} email - The email address of the user to find.
+ * @returns {Promise<Object|null>} The user object if found, otherwise null.
+ * @throws {Error} If a database error occurs.
+ */
 export const findUserByEmail = async (email) => {
-  console.log("Finding user by email:", email);
+  logger.info("Finding user by email:", email);
   
   try {
     // query from the database to find user by email
@@ -44,8 +56,12 @@ export const findUserByEmail = async (email) => {
 };
 
 
-// find user by id 
-
+/**
+ * Finds a user by their ID.
+ * @param {string} id - The ID of the user to find.
+ * @returns {Promise<Object|null>} The user object if found, otherwise null.
+ * @throws {Error} If a database error occurs.
+ */
 export const findUserById = async (id) => {
   try {
     // query from the database to find user by id
@@ -61,7 +77,13 @@ export const findUserById = async (id) => {
 } 
 
 
-// update user profile
+/**
+ * Updates a user's profile information.
+ * @param {string} userId - The ID of the user to update.
+ * @param {Object} updates - An object containing the fields to update (e.g., { firstName, lastName, email }).
+ * @returns {Promise<Object|null>} The updated user object if successful, otherwise null.
+ * @throws {Error} If a database error occurs.
+ */
 export const updateUserProfile = async (userId, updates) => {
   try {
     const validColumns = {
@@ -107,7 +129,13 @@ export const updateUserProfile = async (userId, updates) => {
   }
 };
 
-// update privacy setting for a user
+/**
+ * Updates a user's privacy setting.
+ * @param {string} userId - The ID of the user to update.
+ * @param {string} privacySetting - The new privacy setting.
+ * @returns {Promise<Object|null>} The updated user object with privacy setting if successful, otherwise null.
+ * @throws {Error} If a database error occurs.
+ */
 export const updatePrivacy = async (userId, privacySetting) => {
   try {
     const query = `

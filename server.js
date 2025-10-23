@@ -51,20 +51,20 @@ app.use((req, res) => {
 app.use(errorHandler);
 
 
-const server = app.listen(PORT, () => console.log(`Server started on port ${PORT}`));
+const server = app.listen(PORT, () => logger.info(`Server started on port ${PORT}`));
 
 // gracefull shutdown
 
 process.on("SIGTERM", () => {
-  console.log("SIGTERM signal received: closing HTTP server");
+  logger.info("SIGTERM signal received: closing HTTP server");
   server.close(() => {
-    console.log("HTTP server closed");
+    logger.info("HTTP server closed");
   });
 });
 
 process.on("SIGINT", () => {
-  console.log("SIGINT signal received: closing HTTP server");
+  logger.info("SIGINT signal received: closing HTTP server");
   server.close(() => {
-    console.log("HTTP server closed");
+    logger.info("HTTP server closed");
   });
 });

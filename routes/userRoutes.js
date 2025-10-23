@@ -7,7 +7,7 @@ const router = express.Router();
 
 router.put("/profile", authenticate, validateUpdateUserProfile, updateUserProfileController);
 
-router.put("/privacy", authenticate, validateVaultItemId, updatePrivacySetting);
+router.put("/privacy", authenticate, updatePrivacySetting);
 
 router.put("/notification", authenticate, updateNotificationPreferences);
 

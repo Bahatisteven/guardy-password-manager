@@ -1,7 +1,8 @@
-import { createVaultItem, getVaultItemByNameAndType, deleteVaultItemById, getFilteredVaultItems, getTotalFilteredVaultItems, updateVaultItem, shareVault  } from "../models/VaultItem.js";
+import { createVaultItem, getVaultItemByNameAndType, deleteVaultItemById, getFilteredVaultItems, getTotalFilteredVaultItems, updateVaultItem, shareVault, getVaultItemsByUserId, findVaultItemById  } from "../models/VaultItem.js";
 import logger  from "../utils/logger.js";
 import { DB_ERRORS } from "../utils/dbErrors.js";
-import fs from "fs/promises"
+import fs from "fs/promises";
+import { AuthenticationError, NotFoundError, ValidationError, AppError } from "../utils/errors.js";
 
 // add vault item
 const addVaultItem = async (req, res, next) => {
@@ -9,14 +10,14 @@ const addVaultItem = async (req, res, next) => {
     const userId = req.user_id;
 
     if (!userId) {
-      throw new Error("User ID is missing in the request.");
+      return next(new AuthenticationError("User ID is missing in the request."));
     }
 
     const { name, type, password, data } = req.body;
 
     const vaultItem = await createVaultItem(userId, name, type, password, data);
     if (!vaultItem) {
-      return res.status(500).json({ message: "Failed to create vault item." });
+      return next(new AppError("Failed to create vault item.", 500));
     }
 
     const { data: encryptedData, ...safeVaultItem } = vaultItem;
@@ -25,7 +26,7 @@ const addVaultItem = async (req, res, next) => {
 
   } catch (error) {
     if (error.code === '23505') { // Handle unique constraint violation
-      return res.status(409).json({ message: "Vault item already exists." });
+      return next(new AppError("Vault item already exists.", 409));
     }
     next(error);
   }
@@ -38,13 +39,13 @@ const getUserVaultItems = async (req, res, next) => {
   try {
     const userId = req.user_id;
     if (!userId) {
-      throw new Error("Unauthorized. Please log in and try again.");
+      return next(new AuthenticationError("Unauthorized. Please log in and try again."));
     }
 
     const { search, type, page= 1, limit = 10 } = req.query;
 
     if (page < 1 || limit < 1 ) {
-      return res.status(400).json({ message: "Page and limit must be positive integers." });
+      return next(new ValidationError("Page and limit must be positive integers."));
     }
 
     const offset = (page - 1) * limit;
@@ -54,7 +55,7 @@ const getUserVaultItems = async (req, res, next) => {
     const totalPages = Math.ceil(totalItems / limit);
 
     if (vaultItems.length === 0) {
-      return res.status(404).json({ message: "No vault items found.", vaultItems: [] });
+      return next(new NotFoundError("No vault items found."));
     }
 
     logger.info(`Vault items retrieved successfully for user ${userId}.`);
@@ -74,12 +75,41 @@ const getUserVaultItems = async (req, res, next) => {
   }
 };
 
+/**
+ * Retrieves a single vault item by its ID for the authenticated user.
+ * @param {Object} req - Express request object, expected to have `req.user_id` populated and `req.params.id`.
+ * @param {Object} res - Express response object.
+ * @param {Function} next - Express next middleware function.
+ * @returns {Promise<void>} A JSON response with the requested vault item.
+ */
+const getVaultItemById = async (req, res, next) => {
+  try {
+    const userId = req.user_id;
+    const itemId = req.params.id;
+
+    if (!userId) {
+      return next(new AuthenticationError("Unauthorized. Please log in and try again."));
+    }
+
+    const vaultItem = await findVaultItemById(userId, itemId);
+
+    if (!vaultItem) {
+      return next(new NotFoundError("Vault item not found."));
+    }
+
+    logger.info(`Vault item ${itemId} retrieved successfully for user ${userId}.`);
+    res.status(200).json({ message: "Vault item retrieved successfully.", vaultItem });
+  } catch (error) {
+    next(error);
+  }
+};
+
 
 // update vault item 
 const updateUserVaultItem = async (req, res, next) => {
   try {
     if (!req.body) {
-      return res.status(400).json({ message: "Request body is missing." });
+      return next(new ValidationError("Request body is missing."));
     }
 
     const userId = req.user_id;
@@ -87,7 +117,7 @@ const updateUserVaultItem = async (req, res, next) => {
     const { name, type, password, ...data } = req.body;
 
     if (!name) {
-      return res.status(400).json({ message: "Missing required fields." });
+      return next(new ValidationError("Missing required fields."));
     }
 
     logger.info("Updating vault item:", { userId, itemId, name, type, password, data });
@@ -95,7 +125,7 @@ const updateUserVaultItem = async (req, res, next) => {
     const result = await updateVaultItem(userId, itemId, name, type, password, data);
 
     if (!result || result.rows.length === 0) {
-      return res.status(404).json({ message: "Vault item not found or not authorized." });
+      return next(new NotFoundError("Vault item not found or not authorized."));
     }
 
     logger.info(`Vault item ${itemId} updated successfully for user ${userId}.`);
@@ -112,13 +142,13 @@ const deleteVaultItem = async (req, res, next) => {
     const { id } = req.params;
 
     if (!userId) {
-      throw new Error("Unauthorized. Please log in and try again.");
+      return next(new AuthenticationError("Unauthorized. Please log in and try again."));
     }
 
     const result = await deleteVaultItemById(userId, id);
 
     if (!result) {
-      return res.status(404).json({ message: "Failed to delete vault item. Item not found"});
+      return next(new NotFoundError("Failed to delete vault item. Item not found"));
     }
 
     logger.info(`Vault item with ID ${id} deleted successfully for user ${userId}.`);
@@ -133,12 +163,13 @@ const deleteVaultItem = async (req, res, next) => {
 const exportVault = async (req, res, next) => {
   const userId = req.user_id; 
   if (!userId) {
-    return res.status(401).json({ message: "Unauthorized. Please log in and try again." });
+    return next(new AuthenticationError("Unauthorized. Please log in and try again."));
   }
   try {
-    const vaultItems = await getAllVaultItemsForUser(userId);
+    const totalItems = await getTotalFilteredVaultItems(userId);
+    const vaultItems = await getVaultItemsByUserId(userId, totalItems, 0);
     if (!vaultItems || vaultItems.length === 0) {
-      return res.status(404).json({ message: "No vault items found." });
+      return next(new NotFoundError("No vault items found."));
     }
 
     const jsonData = JSON.stringify(vaultItems, null, 2);
@@ -160,7 +191,7 @@ const shareVaultController = async (req, res, next) => {
     const { itemId, recipientEmail, accessLevel } = req.body;
     const sharedItem = await shareVault(userId, itemId, recipientEmail, accessLevel);
     if (!sharedItem) {
-      return res.status(400).json({ message: "Failed to share vault item." });
+      return next(new AppError("Failed to share vault item.", 400));
     }
     res.status(200).json({ message: "Vault item shared successfully.", sharedItem });
   } catch (error) {
@@ -175,7 +206,7 @@ const importVault = async (req, res, next) => {
   try {
     const userId = req.user_id;
     if (!userId) {
-      throw new Error("Unauthorized. Please log in and try again.");
+      return next(new AuthenticationError("Unauthorized. Please log in and try again."));
     }
     const fileContent = await fs.readFile(req.file.path, "utf-8");
     const items = JSON.parse(fileContent);
@@ -199,4 +230,4 @@ const importVault = async (req, res, next) => {
 };
 
 
-export { addVaultItem, getUserVaultItems, deleteVaultItem, updateUserVaultItem, exportVault, importVault, shareVaultController };
+export { addVaultItem, getUserVaultItems, deleteVaultItem, updateUserVaultItem, exportVault, importVault, shareVaultController, getVaultItemById };

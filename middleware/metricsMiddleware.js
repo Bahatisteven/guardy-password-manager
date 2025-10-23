@@ -27,7 +27,7 @@ const metricsMiddleware = (req, res, next) => {
 
 
 const metricsRoute = async (req, res) => {
-  console.log("Metrics route hit!")
+  logger.info("Metrics route hit!")
   res.set("Content-Type", client.register.contentType);
   const metrics = await client.register.metrics(); 
   res.end(metrics);

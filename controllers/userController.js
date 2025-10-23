@@ -1,13 +1,21 @@
 import { updateUserProfile, updatePrivacy, updateNotificationPrefs } from "../models/User.js";  
 import logger from "../utils/logger.js";
 import jwt from 'jsonwebtoken';
+import { AuthenticationError, NotFoundError, ValidationError, AppError } from "../utils/errors.js";
 
-const updateUserProfileController = async (req, res) => {
+/**
+ * Handles updating a user's profile information.
+ * @param {Object} req - Express request object, expected to have `req.user_id` populated.
+ * @param {Object} res - Express response object.
+ * @param {Function} next - Express next middleware function.
+ * @returns {Promise<void>} A JSON response with the updated user profile.
+ */
+const updateUserProfileController = async (req, res, next) => {
   try {
     const userId = req.user_id;  
     if (!userId) {
       logger.error("User ID is missing in the request. Ensure the user is authenticated.");
-      return res.status(401).json({ message: "Unauthorized. Please log in and try again." });
+      return next(new AuthenticationError("Unauthorized. Please log in and try again."));
     }
 
     const { firstName, lastName, email } = req.body;
@@ -15,7 +23,7 @@ const updateUserProfileController = async (req, res) => {
     // check if at least one update field is provided
     if (!firstName && !lastName && !email) {
       logger.error("No valid fields provided for profile update.");
-      return res.status(400).json({ message: "No valid fields provided to update." });
+      return next(new ValidationError("No valid fields provided to update."));
     }
 
     // build update object with only provided fields
@@ -28,7 +36,7 @@ const updateUserProfileController = async (req, res) => {
 
     if (!updatedUser) {
       logger.warn(`User profile update failed or user not found for ID ${userId}.`);
-      return res.status(404).json({ message: "User not found or update failed." });
+      return next(new NotFoundError("User not found or update failed."));
     }
 
     logger.info(`User profile updated successfully for user ${userId}.`);
@@ -40,16 +48,22 @@ const updateUserProfileController = async (req, res) => {
   } catch (error) {
     if (error.code === "23505" && error.detail && error.detail.includes("email")) {
       logger.warn(`Attempted to update with duplicate email: ${req.body.email}`);
-      return res.status(409).json({ message: "The email address provided is already in use by another account." });
+      return next(new AppError("The email address provided is already in use by another account.", 409));
     }
     logger.error("Error updating user profile:", error);
-    return res.status(500).json({ message: "An error occurred while updating the user profile." });
+    return next(new AppError("An error occurred while updating the user profile.", 500));
   }
 };
 
 
 
-// update privacy settings
+/**
+ * Handles updating a user's privacy setting.
+ * @param {Object} req - Express request object, expected to have `req.user_id` populated.
+ * @param {Object} res - Express response object.
+ * @param {Function} next - Express next middleware function.
+ * @returns {Promise<void>} A JSON response indicating successful update.
+ */
 const updatePrivacySetting = async (req, res, next) => {
   try {
     const userId = req.user_id;
@@ -57,7 +71,7 @@ const updatePrivacySetting = async (req, res, next) => {
     const result = await updatePrivacy (userId, privacySetting);
     if (!result) {
       logger.error(`Failed to update privacy setting for user ${userId}.`);
-      return res.status(500).json({ message: "Failed to update privacy setting." });
+      return next(new AppError("Failed to update privacy setting.", 500));
     }
     logger.info(`Privacy setting updated successfully for user ${userId}.`);
     res.status(200).json({ message: "Privacy setting updated successfully." });
@@ -68,7 +82,13 @@ const updatePrivacySetting = async (req, res, next) => {
 };
 
 
-// update notification preferences 
+/**
+ * Handles updating a user's notification preferences.
+ * @param {Object} req - Express request object, expected to have `req.user_id` populated.
+ * @param {Object} res - Express response object.
+ * @param {Function} next - Express next middleware function.
+ * @returns {Promise<void>} A JSON response indicating successful update.
+ */
 const updateNotificationPreferences = async (req, res, next) => {
   try {
     const userId = req.user_id;
@@ -92,7 +112,7 @@ const updateNotificationPreferences = async (req, res, next) => {
 
     if (!result) {
       logger.error(`Failed to update notification preferences for user ${userId}.`);
-      return res.status(500).json({ message: "Failed to update notification preferences." });
+      return next(new AppError("Failed to update notification preferences.", 500));
     }
 
     logger.info(`Notification preferences updated successfully for user ${userId}.`);

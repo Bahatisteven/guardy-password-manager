@@ -5,6 +5,16 @@ dotenv.config();
 
 
 
+/**
+ * Sends an email using nodemailer.
+ * @param {Object} options - Email options.
+ * @param {string} options.to - Recipient email address.
+ * @param {string} options.subject - Email subject.
+ * @param {string} options.text - Plain text body of the email.
+ * @param {string} options.html - HTML body of the email.
+ * @returns {Promise<Object>} Information about the sent email.
+ * @throws {Error} If email sending fails.
+ */
 const sendEmail = async ({ to, subject, text, html }) => {
   try {
     const transporter = nodemailer.createTransport({

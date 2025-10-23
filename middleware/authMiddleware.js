@@ -7,9 +7,17 @@ import { findUserByEmail, findUserById } from "../models/User.js";
 import { generateToken, accessCookieOptions } from "../utils/jwt.js";
 import logger from "../utils/logger.js";
 import { sendEmail } from "../utils/sendEmail.js";
+import { AuthenticationError, NotFoundError, AppError } from "../utils/errors.js";
 
 
-// middleware to authenticate JWT token
+/**
+ * Middleware to authenticate JWT token from Authorization header or cookies.
+ * Populates `req.user` with authenticated user's information.
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ * @param {Function} next - Express next middleware function.
+ * @returns {Promise<void>} Calls next() if authentication is successful, otherwise throws an AuthenticationError.
+ */
 export const authenticate = async (req, res, next) => {
   try {
     let token;
@@ -22,14 +30,14 @@ export const authenticate = async (req, res, next) => {
 
     if (!token) {
       logger.warn('Authentication failed: No token provided.');
-      return res.status(401).json({ message: "Authentication required: token missing." });
+      return next(new AuthenticationError("Authentication required: token missing."));
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const user = await findUserById(decoded.id);
     if (!user) {
       logger.warn(`Authentication failed: User with id ${decoded.id} not found.`);
-      return res.status(401).json({ message: "User not found." });
+      return next(new AuthenticationError("User not found."));
     }
 
     req.user = {
@@ -48,14 +56,20 @@ export const authenticate = async (req, res, next) => {
 
 
 
-// middleware to refresh the access token
-
-const refreshToken = async (req, res) => {
+/**
+ * Middleware to refresh the access token using a refresh token from cookies.
+ * Sets a new access token in a cookie.
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ * @param {Function} next - Express next middleware function.
+ * @returns {Promise<void>} A JSON response indicating successful token refresh.
+ */
+const refreshToken = async (req, res, next) => {
   try {
     const refreshToken = req.cookies.refreshToken;
 
     if (!refreshToken) {
-      return res.status(401).json({ message: "Refresh token is missing."});
+      return next(new AuthenticationError("Refresh token is missing."));
     }
      
     // verify the refresh token
@@ -71,13 +85,19 @@ const refreshToken = async (req, res) => {
     
   } catch (error) {
     logger.error("Error during token refresh:", error);
-    res.status(403).json({ message: "Invalid or expired refresh token." });
+    next(new AuthenticationError("Invalid or expired refresh token."));
   }
 };
 
 
-// middleware to authenticate login
-
+/**
+ * Middleware to authenticate user login credentials (email and master password).
+ * Populates `req.user_id` with the authenticated user's ID.
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ * @param {Function} next - Express next middleware function.
+ * @returns {Promise<void>} Calls next() if authentication is successful, otherwise throws an AuthenticationError or AppError.
+ */
 const authenticateLogin = async (req, res, next) => {
   try {
     const { email, masterPassword } = req.body;
@@ -86,7 +106,7 @@ const authenticateLogin = async (req, res, next) => {
     const user = await findUserByEmail(email);
     if (!user) {
       logger.error("Invalid email or password at the user check");
-      return res.status(401).json({ message: "Invalid email or password." });
+      return next(new AuthenticationError("Invalid email or password."));
     }
 
     // check if password is correct
@@ -94,7 +114,7 @@ const authenticateLogin = async (req, res, next) => {
 
     if (!isPasswordValid) {
       logger.error("Invalid email or password at the isPasswordValid check");
-      return res.status(401).json({ message: "Invalid email or password" });
+      return next(new AuthenticationError("Invalid email or password"));
     }
 
     // set user_id in request
@@ -103,20 +123,25 @@ const authenticateLogin = async (req, res, next) => {
     
   } catch (error) {
     logger.error("Error during login authentication:", error);
-    return res.status(500).json({ message: "An error occurred during login authentication." });
+    return next(new AppError("An error occurred during login authentication.", 500));
   }
 };
 
 
-// middleware to send verification email
-
-const sendVerificationEmail = async (req, res) => {
+/**
+ * Middleware to send a verification email to a user.
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ * @param {Function} next - Express next middleware function.
+ * @returns {Promise<void>} A JSON response indicating successful email sending.
+ */
+const sendVerificationEmail = async (req, res, next) => {
   const { email } = req.body;
 
   try {
     const user = await findUserByEmail(email);
     if (!user) {
-      return res.status(404).json({ message: "User not found." });
+      return next(new NotFoundError("User not found."));
     }
 
     // generate verification token
@@ -136,7 +161,7 @@ const sendVerificationEmail = async (req, res) => {
     res.status(200).json({ message: "Verification email sent successfully." });
   } catch (error) {
     logger.error("Error sending verification email:", error);
-    return res.status(500).json({ message: "An error occurred while sending verification email." });
+    return next(new AppError("An error occurred while sending verification email.", 500));
   }
 };
 

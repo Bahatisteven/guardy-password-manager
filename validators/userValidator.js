@@ -1,5 +1,11 @@
 import Joi from "joi";
 
+/**
+ * Middleware to validate user profile update data.
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ * @param {Function} next - Express next middleware function.
+ */
 export const validateUpdateUserProfile = (req, res, next) => {
   const schema = Joi.object({
     firstName: Joi.string().min(2).max(50),

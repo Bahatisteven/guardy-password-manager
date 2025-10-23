@@ -2,16 +2,35 @@ import CryptoJS from "crypto-js";
 import { dbPool as pool } from "../config/db.js";
 import util from "util";
 
+/**
+ * Encrypts a given text using AES encryption.
+ * @param {string} text - The text to encrypt.
+ * @returns {string} The encrypted text.
+ */
 const encrypt = (text) => {
   return CryptoJS.AES.encrypt(text, process.env.ENCRYPTION_KEY).toString();
 };
 
+/**
+ * Decrypts a given encrypted text using AES decryption.
+ * @param {string} encryptedText - The text to decrypt.
+ * @returns {string} The decrypted text.
+ */
 const decrypt = (encryptedText) => {
   const bytes = CryptoJS.AES.decrypt(encryptedText, process.env.ENCRYPTION_KEY);
   return bytes.toString(CryptoJS.enc.Utf8);
 };
 
-// create vault item modal to interact with the database
+/**
+ * Creates a new vault item in the database.
+ * @param {string} userId - The ID of the user who owns the vault item.
+ * @param {string} name - The name of the vault item.
+ * @param {string} type - The type of the vault item (e.g., 'password', 'note', 'card').
+ * @param {string} password - The password associated with the vault item (will be encrypted).
+ * @param {Object} data - Additional data for the vault item.
+ * @returns {Promise<Object>} The newly created vault item object.
+ * @throws {Error} If a database error occurs.
+ */
 export const createVaultItem = async (userId, name, type, password, data) => {
   try {
     // encrypt the password
@@ -25,13 +44,20 @@ export const createVaultItem = async (userId, name, type, password, data) => {
     // return null if no rows are returned
     return result.rows[0];
   } catch (error) {
-    console.error("Error creating vault item:", error);
+    logger.error("Error creating vault item:", error);
     throw error;
   }
 };
 
 
-// get vault items by user id with pagination to be interacted with the database
+/**
+ * Retrieves vault items for a specific user with pagination.
+ * @param {string} userId - The ID of the user.
+ * @param {number} limits - The maximum number of items to return.
+ * @param {number} offset - The number of items to skip.
+ * @returns {Promise<Array<Object>>} An array of vault item objects.
+ * @throws {Error} If a database error occurs.
+ */
 export const getVaultItemsByUserId = async (userId, limits, offset) => {
   try {
     // check if limits and offset are provided, if not set default values
@@ -44,13 +70,20 @@ export const getVaultItemsByUserId = async (userId, limits, offset) => {
     });
     return result.rows;
   } catch (error) {
-    console.error("Error retrieving vault items:", { error: error.message});
+    logger.error("Error retrieving vault items:", { error: error.message});
     throw error;
   }
 };
 
 
-// get vault item by name and type to be interacted with the database
+/**
+ * Retrieves a vault item by its name and type for a specific user.
+ * @param {string} userId - The ID of the user.
+ * @param {string} name - The name of the vault item.
+ * @param {string} type - The type of the vault item.
+ * @returns {Promise<Object|null>} The vault item object if found, otherwise null.
+ * @throws {Error} If a database error occurs.
+ */
 export const getVaultItemByNameAndType = async (userId, name, type) => {
   try {
     // query to get vault item by name and type
@@ -64,13 +97,18 @@ export const getVaultItemByNameAndType = async (userId, name, type) => {
     }
     return result.rows[0];
   } catch (error) {
-    console.error("Error retrieving vault item:", error.message);
+    logger.error("Error retrieving vault item:", error.message);
     throw error;
   }
 }
 
 
-// get total vault items by user id to be interacted with the database
+/**
+ * Retrieves the total count of vault items for a specific user.
+ * @param {string} userId - The ID of the user.
+ * @returns {Promise<number>} The total number of vault items.
+ * @throws {Error} If a database error occurs.
+ */
 export const getTotalVaultItemsByUserId = async (userId) => {
   try {
     // query to get total vault items by user id
@@ -81,12 +119,21 @@ export const getTotalVaultItemsByUserId = async (userId) => {
     // if no rows are returned, return 0
     return parseInt(result.rows[0].count, 10);
   } catch (error) {
-    console.error("Error retrieving total vault items:", error);
+    logger.error("Error retrieving total vault items:", error);
     throw error;
   }
 };
 
-// get filtered vault item by user
+/**
+ * Retrieves filtered vault items for a specific user with pagination.
+ * @param {string} userId - The ID of the user.
+ * @param {string} search - The search term to filter by name.
+ * @param {string} type - The type to filter by.
+ * @param {number} limit - The maximum number of items to return.
+ * @param {number} offset - The number of items to skip.
+ * @returns {Promise<Array<Object>>} An array of filtered vault item objects.
+ * @throws {Error} If a database error occurs.
+ */
 export const getFilteredVaultItems = async (userId, search, type, limit, offset) => {
   try {
     const conditions = ["user_id = $1"];
@@ -120,13 +167,20 @@ export const getFilteredVaultItems = async (userId, search, type, limit, offset)
     });
     return result.rows;
   } catch (error) {
-    console.error("Error retrieving filtered vault items:", error.message);
+    logger.error("Error retrieving filtered vault items:", error.message);
     throw error;
   }
 };
 
 
-// get total filtered vault items by user
+/**
+ * Retrieves the total count of filtered vault items for a specific user.
+ * @param {string} userId - The ID of the user.
+ * @param {string} search - The search term to filter by name.
+ * @param {string} type - The type to filter by.
+ * @returns {Promise<number>} The total number of filtered vault items.
+ * @throws {Error} If a database error occurs.
+ */
 export const getTotalFilteredVaultItems = async (userId, search, type) => {
   try {
     // build the conditions and values for the query
@@ -153,12 +207,22 @@ export const getTotalFilteredVaultItems = async (userId, search, type) => {
     const result = await pool.query(query, values);
     return parseInt(result.rows[0].total, 10);
   } catch(error) {
-    console.error("Error retrieving total filtered vault items:", error.message);
+    logger.error("Error retrieving total filtered vault items:", error.message);
     throw error;
   }
 };
 
-// update vault item
+/**
+ * Updates an existing vault item.
+ * @param {string} userId - The ID of the user who owns the vault item.
+ * @param {string} id - The ID of the vault item to update.
+ * @param {string} name - The new name of the vault item.
+ * @param {string} type - The new type of the vault item.
+ * @param {string} password - The new password for the vault item (will be encrypted).
+ * @param {Object} data - The new additional data for the vault item.
+ * @returns {Promise<Object>} The updated vault item object.
+ * @throws {Error} If the vault item is not found or a database error occurs.
+ */
 export const updateVaultItem = async (userId, id, name, type, password, data) => {
   try {
     // encrypt the password
@@ -179,13 +243,19 @@ export const updateVaultItem = async (userId, id, name, type, password, data) =>
     result.rows[0].password = decrypt(result.rows[0].password);
     return result.rows[0];
   } catch (error) {
-    console.error("Error updating vault item:", util.inspect(error, { depth: null, colors: true}));
+    logger.error("Error updating vault item:", util.inspect(error, { depth: null, colors: true}));
     throw error;
   }
 };
 
 
-// delete vault item by id
+/**
+ * Deletes a vault item by its ID.
+ * @param {string} userId - The ID of the user who owns the vault item.
+ * @param {string} id - The ID of the vault item to delete.
+ * @returns {Promise<Object|null>} The deleted vault item object if successful, otherwise null.
+ * @throws {Error} If a database error occurs.
+ */
 export const deleteVaultItemById = async (userId, id) => {
   try {
     // query to delete the vault item by id
@@ -196,13 +266,22 @@ export const deleteVaultItemById = async (userId, id) => {
     // if no rows, throw error
     return result.rows[0];
   } catch (error) {
-    console.error("Error deleting vault item:", util.inspect(error, { depth: null, colors: true}));
+    logger.error("Error deleting vault item:", util.inspect(error, { depth: null, colors: true}));
     throw error;
   }
 };
 
 
 
+/**
+ * Shares a vault item with another user.
+ * @param {string} userId - The ID of the user who owns the vault item.
+ * @param {string} itemId - The ID of the vault item to share.
+ * @param {string} recipientEmail - The email of the user to share with.
+ * @param {string} [accessLevel="view"] - The access level for the shared item (e.g., "view", "edit").
+ * @returns {Promise<Object>} The shared vault item object.
+ * @throws {Error} If the recipient is not found, item not owned by user, duplicate sharing, or a database error occurs.
+ */
 export const shareVault = async (userId, itemId, recipientEmail, accessLevel = "view") => {
   try {
     // if the recipient exists
@@ -241,7 +320,31 @@ export const shareVault = async (userId, itemId, recipientEmail, accessLevel = "
 
     return result.rows[0];
   } catch (error) {
-    console.error("Error sharing vault item:", util.inspect(error, { depth: null, colors: true }));
+    logger.error("Error sharing vault item:", util.inspect(error, { depth: null, colors: true }));
+    throw error;
+  }
+};
+
+/**
+ * Finds a single vault item by its ID and the user ID.
+ * @param {string} userId - The ID of the user who owns the vault item.
+ * @param {string} itemId - The ID of the vault item to find.
+ * @returns {Promise<Object|null>} The vault item object if found, otherwise null.
+ * @throws {Error} If a database error occurs.
+ */
+export const findVaultItemById = async (userId, itemId) => {
+  try {
+    const result = await pool.query(
+      "SELECT * FROM vault_items WHERE id = $1 AND user_id = $2",
+      [itemId, userId]
+    );
+    if (result.rows.length > 0) {
+      result.rows[0].password = decrypt(result.rows[0].password);
+      return result.rows[0];
+    }
+    return null;
+  } catch (error) {
+    logger.error("Error finding vault item by ID:", error);
     throw error;
   }
 };
