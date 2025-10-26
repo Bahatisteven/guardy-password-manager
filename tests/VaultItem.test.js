@@ -1,13 +1,8 @@
-import {
-  createVaultItem,
-  getVaultItemsByUserId,
-  getFilteredVaultItems,
-  getTotalFilteredVaultItems,
-  deleteVaultItemById
-} from "../models/VaultItem.js";
-
+import { createVaultItem, getVaultItemsByUserId, getFilteredVaultItems, getTotalFilteredVaultItems, deleteVaultItemById } from "../models/VaultItem.js";
 import { dbPool as pool } from "../config/db.js";
+import CryptoJS from "crypto-js";
 
+process.env.ENCRYPTION_KEY = 'test_encryption_key';
 
 jest.mock("../config/db.js");
 
@@ -30,14 +25,14 @@ describe("VaultItem Model", () => {
     const result = await createVaultItem(1, "Test Item", "password", "secretPassword", "secretData" );
     expect(result).toEqual(mockResult.rows[0]);
     expect(pool.query).toHaveBeenCalledWith(
-      "INSERT INTO vault_items (user_id, name, type, data) VALUES ($1, $2, $3, $4) RETURNING *",
+      "INSERT INTO vault_items (user_id, name, type, password, data) VALUES ($1, $2, $3, $4, $5) RETURNING *",
       expect.any(Array)
     );
   });
 
   // test to test the getVaultItemsByUserId function
   test("getVaultItemsByUserId should retrieve items for user", async () => {
-    const mockResult = { rows: [{ id: 1, name: "Test Item", type: "password"}] };
+    const mockResult = { rows: [{ id: 1, name: "Test Item", type: "password", password: CryptoJS.AES.encrypt('password', process.env.ENCRYPTION_KEY).toString()}] };
     pool.query.mockResolvedValue(mockResult);
 
     const result = await getVaultItemsByUserId(1, 10, 0);
@@ -49,7 +44,7 @@ describe("VaultItem Model", () => {
   });
 
   test("getFilteredVaultItems should retrieve filtered items ", async () => {
-    const mockResult = { rows: [{ id: 1, name: "Filtered Item", type: "password" }] };
+    const mockResult = { rows: [{ id: 1, name: "Filtered Item", type: "password", password: CryptoJS.AES.encrypt('password', process.env.ENCRYPTION_KEY).toString() }] };
     pool.query.mockResolvedValue(mockResult);
 
     const result = await getFilteredVaultItems(1, "Filtered Item", "password", 10, 0);

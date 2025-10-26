@@ -19,7 +19,7 @@ const signUp = async (req, res, next) => {
     const passwordHash = await argon2.hash(masterPassword);
     const user = await createUser(email, passwordHash, hint, firstName, lastName);
 
-    const token = generateToken({ id: user.id, email: user.email, name: user.first_name || user.name });
+    const token = generateToken({ id: user.id, email: user.email });
     const refreshToken = generateRefreshToken({ id: user.id, email: user.email });
 
     res.cookie("token", token, accessCookieOptions);
