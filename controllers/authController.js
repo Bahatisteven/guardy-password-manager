@@ -19,7 +19,7 @@ const signUp = async (req, res, next) => {
     const passwordHash = await argon2.hash(masterPassword);
     const user = await createUser(email, passwordHash, hint, firstName, lastName);
 
-    const token = generateToken({ id: user.id, email: user.email, name: user.first_name || user.name });
+    const token = generateToken({ id: user.id, email: user.email });
     const refreshToken = generateRefreshToken({ id: user.id, email: user.email });
 
     res.cookie("token", token, accessCookieOptions);
@@ -95,27 +95,5 @@ const logout = async (req, res, next) => {
   }
 };
 
-
-
-/**
- * Returns the authenticated user's information.
- * Requires the `authenticate` middleware to have run successfully.
- * @param {Object} req - Express request object, expected to have `req.user` populated.
- * @param {Object} res - Express response object.
- * @param {Function} next - Express next middleware function.
- * @returns {Promise<void>} A JSON response with the authenticated user's information.
- */
-const me = async (req, res, next) => {
-  // retrieve user from request object
-  const user = req.user;
-
-  // check if user is authenticated
-  if (!user) {
-    return next(new AuthenticationError("Not authenticated."));
-  }
-
-  // return user information
-  res.status(200).json({ user });
-};
 
 export { signUp, login, logout, me };

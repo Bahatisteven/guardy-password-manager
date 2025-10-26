@@ -1,6 +1,9 @@
 import CryptoJS from "crypto-js";
+import dotenv from "dotenv";
+dotenv.config();
 import { dbPool as pool } from "../config/db.js";
 import util from "util";
+import logger from "../utils/logger.js";
 
 /**
  * Encrypts a given text using AES encryption.

@@ -27,6 +27,7 @@ const signUpSchema = Joi.object({
   hint: Joi.string().max(100).allow('', null),
 });
 
+
 const loginSchema = Joi.object({
   email: Joi.string().email().required(),
   masterPassword: Joi.string()
@@ -38,11 +39,6 @@ const loginSchema = Joi.object({
     }),
 });
 
-/**
- * Reusable validation middleware factory.
- * @param {Joi.Schema} schema - The Joi schema to validate against.
- * @returns {Function} An Express middleware function.
- */
 const validate = (schema) => (req, res, next) => {
   const { error } = schema.validate(req.body, { abortEarly: false, stripUnknown: true });
   if (error) {

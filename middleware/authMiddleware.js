@@ -10,14 +10,6 @@ import { sendEmail } from "../utils/sendEmail.js";
 import { AuthenticationError, NotFoundError, AppError } from "../utils/errors.js";
 
 
-/**
- * Middleware to authenticate JWT token from Authorization header or cookies.
- * Populates `req.user` with authenticated user's information.
- * @param {Object} req - Express request object.
- * @param {Object} res - Express response object.
- * @param {Function} next - Express next middleware function.
- * @returns {Promise<void>} Calls next() if authentication is successful, otherwise throws an AuthenticationError.
- */
 export const authenticate = async (req, res, next) => {
   try {
     let token;
@@ -43,7 +35,7 @@ export const authenticate = async (req, res, next) => {
     req.user = {
       id: user.id,
       email: user.email,
-      name: user.first_name || user.name || "", // adapt field names
+      name: user.first_name || "", // adapt field names
     };
 
     logger.info(`User ${req.user.id} authenticated successfully.`);
@@ -165,4 +157,4 @@ const sendVerificationEmail = async (req, res, next) => {
   }
 };
 
-export { refreshToken, authenticateLogin, sendVerificationEmail };
+export { authenticate, refreshToken, authenticateLogin, sendVerificationEmail };
