@@ -3,6 +3,7 @@ import { signUp, login, logout } from '../controllers/authController.js';
 import { validateSignUp, validateLogin } from '../validators/authValidator.js';
 import { authenticateLogin, authenticate, refreshToken } from '../middleware/authMiddleware.js';
 import { authLimiter } from '../middleware/rateLimit.js';
+import { me } from '../controllers/authController.js';
 
 const router = express.Router();
 
@@ -14,6 +15,6 @@ router.post("/login", authLimiter, validateLogin, authenticateLogin, login);
 
 router.post("/logout", authenticate, logout);
 
-router.post("/refresh", refreshToken );
+router.get("/me", authenticate, me);
 
 export default router;

@@ -96,26 +96,4 @@ const logout = async (req, res, next) => {
 };
 
 
-
-/**
- * Returns the authenticated user's information.
- * Requires the `authenticate` middleware to have run successfully.
- * @param {Object} req - Express request object, expected to have `req.user` populated.
- * @param {Object} res - Express response object.
- * @param {Function} next - Express next middleware function.
- * @returns {Promise<void>} A JSON response with the authenticated user's information.
- */
-const me = async (req, res, next) => {
-  // retrieve user from request object
-  const user = req.user;
-
-  // check if user is authenticated
-  if (!user) {
-    return next(new AuthenticationError("Not authenticated."));
-  }
-
-  // return user information
-  res.status(200).json({ user });
-};
-
 export { signUp, login, logout, me };
