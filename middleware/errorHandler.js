@@ -5,6 +5,14 @@ import { AppError, AuthenticationError, NotFoundError, ValidationError } from ".
 const errorHandler = (err, req, res, next) => {
   logger.error(err.stack);
 
+  if (err.isJoi) {
+    return res.status(400).json({
+      status: 'fail',
+      message: 'Validation failed',
+      errors: err.details.map(detail => detail.message)
+    });
+  }
+
   if (err instanceof AppError) {
     return res.status(err.statusCode).json({ status: err.status, message: err.message, ...(err.errors && { errors: err.errors }) });
   }
