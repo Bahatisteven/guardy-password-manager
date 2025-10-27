@@ -32,7 +32,10 @@ app.use(cors({
 app.use(morgan("combined"));
 
 app.use(compression());
+import requestLogger from "./middleware/requestLogger.js";
+
 app.use(cookieParser());
+app.use(requestLogger);
 
 app.get("/api/health", (req, res) => {
   logger.info("Health check route hit");

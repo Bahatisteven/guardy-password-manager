@@ -11,6 +11,7 @@ export const validateUpdateUserProfile = (req, res, next) => {
     firstName: Joi.string().min(2).max(50),
     lastName: Joi.string().min(2).max(50),
     email: Joi.string().email(),
+    hint: Joi.string().max(100).allow('', null),
   }).min(1); // Require at least one field to be present
 
   const { error } = schema.validate(req.body);
