@@ -1,9 +1,85 @@
-import { createUser, findUserByEmail, findUserById } from "../models/User.js";
+import { createUser, findUserByEmail, findUserById, updateTwoFactorSecret } from "../models/User.js";
 import { generateToken, generateRefreshToken, refreshTokenCookieOptions, accessCookieOptions } from "../utils/jwt.js";
 import argon2 from "argon2";
 import logger from "../utils/logger.js";
 import { AuthenticationError, ValidationError, AppError } from "../utils/errors.js";
+import { generateTwoFactorSecret, verifyTwoFactorToken } from "../utils/twoFactorAuth.js";
 
+/**
+ * Initiates the 2FA setup process for a user.
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ * @param {Function} next - Express next middleware function.
+ * @returns {Promise<void>} A JSON response with the 2FA setup details (secret, otpauthUrl, qrcodeDataUrl).
+ */
+const setup2FA = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    const userEmail = req.user.email;
+
+    const { secret, otpauthUrl, qrcodeDataUrl } = await generateTwoFactorSecret(userEmail);
+
+    // Temporarily store the secret in the session or a cache, not directly in the DB yet
+    // The user must confirm with a token before saving it permanently
+    req.session.twoFactorSecret = secret; // session middleware is used
+
+    res.status(200).json({ secret, otpauthUrl, qrcodeDataUrl });
+  } catch (err) {
+    logger.error("Error setting up 2FA:", err);
+    next(new AppError("Failed to setup 2FA.", 500));
+  }
+};
+
+/**
+ * Enables 2FA for a user by verifying the provided token and storing the secret.
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ * @param {Function} next - Express next middleware function.
+ * @returns {Promise<void>} A JSON response indicating success or failure.
+ */
+const enable2FA = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    const { token } = req.body;
+    const tempSecret = req.session.twoFactorSecret; // Retrieve temporary secret
+
+    if (!tempSecret) {
+      return next(new ValidationError("2FA setup not initiated or session expired."));
+    }
+
+    if (!verifyTwoFactorToken(tempSecret, token)) {
+      return next(new AuthenticationError("Invalid 2FA token."));
+    }
+
+    await updateTwoFactorSecret(userId, tempSecret);
+    delete req.session.twoFactorSecret; // Clear temporary secret
+
+    res.status(200).json({ message: "2FA enabled successfully." });
+  } catch (err) {
+    logger.error("Error enabling 2FA:", err);
+    next(new AppError("Failed to enable 2FA.", 500));
+  }
+};
+
+/**
+ * Disables 2FA for a user.
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ * @param {Function} next - Express next middleware function.
+ * @returns {Promise<void>} A JSON response indicating success or failure.
+ */
+const disable2FA = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+
+    await updateTwoFactorSecret(userId, null); // Clear the 2FA secret in the database
+
+    res.status(200).json({ message: "2FA disabled successfully." });
+  } catch (err) {
+    logger.error("Error disabling 2FA:", err);
+    next(new AppError("Failed to disable 2FA.", 500));
+  }
+};
 
 /**
  * Handles user registration, creates a new user, and generates authentication tokens.
@@ -61,13 +137,18 @@ const login = async (req, res, next) => {
       return next(new AuthenticationError("Invalid credentials."));
     }
 
+    if (user.two_factor_secret) {
+      // If 2FA is enabled, prompt for 2FA token
+      return res.status(200).json({ requires2FA: true, email: user.email });
+    }
+
     const token = generateToken({ id: user.id, email: user.email });
     const refreshToken = generateRefreshToken({ id: user.id, email: user.email });
 
     res.cookie("token", token, accessCookieOptions);
     res.cookie("refreshToken", refreshToken, refreshTokenCookieOptions);
 
-    const { password_hash, ...safeUser } = user;
+    const { password_hash, two_factor_secret, ...safeUser } = user;
     res.status(200).json({ user: safeUser });
   } catch (err) {
     logger.error("Login error:", err);
@@ -75,6 +156,39 @@ const login = async (req, res, next) => {
   }
 };
 
+/**
+ * Verifies a 2FA token during the login process.
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ * @param {Function} next - Express next middleware function.
+ * @returns {Promise<void>} A JSON response with user data and tokens in cookies if 2FA is successful.
+ */
+const verify2FA = async (req, res, next) => {
+  try {
+    const { email, token } = req.body;
+
+    const user = await findUserByEmail(email);
+    if (!user || !user.two_factor_secret) {
+      return next(new AuthenticationError("2FA not enabled for this user."));
+    }
+
+    if (!verifyTwoFactorToken(user.two_factor_secret, token)) {
+      return next(new AuthenticationError("Invalid 2FA token."));
+    }
+
+    const jwtToken = generateToken({ id: user.id, email: user.email });
+    const refreshToken = generateRefreshToken({ id: user.id, email: user.email });
+
+    res.cookie("token", jwtToken, accessCookieOptions);
+    res.cookie("refreshToken", refreshToken, refreshTokenCookieOptions);
+
+    const { password_hash, two_factor_secret, ...safeUser } = user;
+    res.status(200).json({ user: safeUser });
+  } catch (err) {
+    logger.error("2FA verification error:", err);
+    next(err);
+  }
+};
 
 /**
  * Logs out a user by clearing authentication cookies.
@@ -95,5 +209,19 @@ const logout = async (req, res, next) => {
   }
 };
 
+const me = async (req, res, next) => {
+  try {
+    const user = await findUserById(req.user.id);
+    if (!user) {
+      return next(new NotFoundError("User not found."));
+    }
+    const { password_hash, ...safeUser } = user;
+    res.status(200).json({ user: safeUser });
+  } catch (err) {
+    logger.error("Error fetching user profile:", err);
+    next(err);
+  }
+};
 
-export { signUp, login, logout, me };
+
+export { signUp, login, logout, me, setup2FA, enable2FA, disable2FA, verify2FA };

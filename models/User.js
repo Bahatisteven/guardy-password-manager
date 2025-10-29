@@ -44,7 +44,7 @@ export const findUserByEmail = async (email) => {
   try {
     // query from the database to find user by email
     const result = await Pool.query(
-      "SELECT * FROM users WHERE email = $1",
+      "SELECT id, email, password_hash, hint, first_name, last_name, two_factor_secret FROM users WHERE email = $1",
       [email]
     );
     // if no user is found, return null
@@ -66,7 +66,7 @@ export const findUserById = async (id) => {
   try {
     // query from the database to find user by id
     const result = await Pool.query(
-      "SELECT * FROM users WHERE id = $1", [id]
+      "SELECT id, email, password_hash, hint, first_name, last_name, two_factor_secret FROM users WHERE id = $1", [id]
     );
     // if no user is found, return null
     return result.rows[0];
@@ -210,5 +210,33 @@ export const updateNotificationPrefs = async (userId, prefs) => {
   } catch (error) {
     logger.error("Error updating notification preferences:", error);
     return null;
+  }
+};
+
+/**
+ * Updates a user's two-factor authentication secret.
+ * @param {string} userId - The ID of the user to update.
+ * @param {string|null} secret - The new 2FA secret (base32 encoded) or null to disable 2FA.
+ * @returns {Promise<Object|null>} The updated user object with the 2FA secret if successful, otherwise null.
+ * @throws {Error} If a database error occurs.
+ */
+export const updateTwoFactorSecret = async (userId, secret) => {
+  try {
+    const query = `
+      UPDATE users
+      SET two_factor_secret = $1, updated_at = NOW()
+      WHERE id = $2
+      RETURNING id, email, two_factor_secret;
+    `;
+    const values = [secret, userId];
+    const result = await Pool.query(query, values);
+
+    if (result.rows.length > 0) {
+      return result.rows[0];
+    }
+    return null;
+  } catch (error) {
+    logger.error("Error updating two-factor secret:", error);
+    throw error;
   }
 };
