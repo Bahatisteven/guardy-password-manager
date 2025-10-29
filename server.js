@@ -7,6 +7,7 @@ import cors from "cors";
 import morgan from "morgan";
 import compression from "compression";
 import cookieParser from "cookie-parser";
+import session from "express-session";
 import { apiLimiter } from "./middleware/rateLimit.js";
 import { metricsMiddleware, metricsRoute } from "./middleware/metricsMiddleware.js";
 import logger from "./utils/logger.js";
@@ -35,6 +36,16 @@ app.use(compression());
 import requestLogger from "./middleware/requestLogger.js";
 
 app.use(cookieParser());
+app.use(session({
+  secret: process.env.SESSION_SECRET,
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    httpOnly: true,
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+  }
+}));
 app.use(requestLogger);
 
 app.get("/api/health", (req, res) => {
