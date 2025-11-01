@@ -10,7 +10,7 @@ import logger from "../utils/logger.js";
  * @returns {Promise<Object>} The newly created user object.
  * @throws {Error} If a user with the email already exists or other database error occurs.
  */
-export const createUser = async ( email, passwordHash, hint, firstName, lastName) => {
+export const createUser = async ( email, passwordHash, hint, firstName, lastName, encryptedMasterKey, masterKeySalt) => {
   try {
 
     // check if user alredy exists
@@ -21,8 +21,8 @@ export const createUser = async ( email, passwordHash, hint, firstName, lastName
 
     // insert the user into the database
     const result = await Pool.query(
-      "INSERT INTO users ( email, password_hash, hint, first_name, last_name) VALUES ( $1, $2, $3, $4, $5 ) RETURNING *",
-      [email, passwordHash, hint, firstName, lastName]
+      "INSERT INTO users ( email, password_hash, hint, first_name, last_name, encrypted_master_key, master_key_salt) VALUES ( $1, $2, $3, $4, $5, $6, $7 ) RETURNING *",
+      [email, passwordHash, hint, firstName, lastName, encryptedMasterKey, masterKeySalt]
     );
     return result.rows[0];
   } catch (error) {
@@ -44,7 +44,7 @@ export const findUserByEmail = async (email) => {
   try {
     // query from the database to find user by email
     const result = await Pool.query(
-      "SELECT id, email, password_hash, hint, first_name, last_name, two_factor_secret FROM users WHERE email = $1",
+      "SELECT id, email, password_hash, hint, first_name, last_name, two_factor_secret, encrypted_master_key, master_key_salt FROM users WHERE email = $1",
       [email]
     );
     // if no user is found, return null
@@ -66,7 +66,7 @@ export const findUserById = async (id) => {
   try {
     // query from the database to find user by id
     const result = await Pool.query(
-      "SELECT id, email, password_hash, hint, first_name, last_name, two_factor_secret FROM users WHERE id = $1", [id]
+      "SELECT id, email, password_hash, hint, first_name, last_name, two_factor_secret, encrypted_master_key, master_key_salt FROM users WHERE id = $1", [id]
     );
     // if no user is found, return null
     return result.rows[0];

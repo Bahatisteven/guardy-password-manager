@@ -18,6 +18,16 @@ jest.mock('jsonwebtoken', () => ({
   verify: jest.fn().mockReturnValue({ id: 1, email: 'test@example.com' }),
 }));
 
+jest.mock('../utils/pbkdf.js', () => ({
+  deriveKey: jest.fn().mockImplementation((password, salt) => {
+    if (password === 'Password123!' && salt.toString('hex') === 'salt') {
+      return Promise.resolve(Buffer.from('key', 'hex'));
+    }
+    return Promise.resolve(Buffer.from('wrong_key', 'hex'));
+  }),
+  generateSalt: jest.fn().mockReturnValue(Buffer.from('salt', 'hex')),
+}));
+
 const app = express();
 app.use(express.json());
 app.use(cookieParser());
@@ -80,7 +90,7 @@ describe('Auth Controller', () => {
         masterPassword: 'Password123!',
       };
 
-      const user = { id: 1, email: loginData.email, password_hash: 'hashed_password' };
+      const user = { id: 1, email: loginData.email, password_hash: 'hashed_password', master_key_salt: 'salt', encrypted_master_key: 'key' };
 
       findUserByEmail.mockResolvedValue(user);
 
