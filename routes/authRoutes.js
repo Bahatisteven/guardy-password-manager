@@ -3,7 +3,7 @@ import { signUp, login, logout, me, setup2FA, enable2FA, disable2FA, verify2FA }
 import { validateSignUp, validateLogin } from '../validators/authValidator.js';
 import { authenticateLogin, authenticate, refreshToken } from '../middleware/authMiddleware.js';
 import { authLimiter } from '../middleware/rateLimit.js';
-import { me } from '../controllers/authController.js';
+
 
 const router = express.Router();
 

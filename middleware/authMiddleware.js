@@ -157,4 +157,4 @@ const sendVerificationEmail = async (req, res, next) => {
   }
 };
 
-export { authenticate, refreshToken, authenticateLogin, sendVerificationEmail };
+export { refreshToken, authenticateLogin, sendVerificationEmail };
